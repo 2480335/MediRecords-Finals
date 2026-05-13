@@ -1,0 +1,6 @@
+@MediRecords_HostAddress = http://localhost:5157
+
+GET {{MediRecords_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

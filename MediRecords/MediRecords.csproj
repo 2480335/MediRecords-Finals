@@ -1,0 +1,79 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+ 
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+ 
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="13.0.1" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.5">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.OpenApi" Version="2.4.1" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="10.0.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.5" />
+  </ItemGroup>
+ 
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+    <Folder Include="Dto\ImagingOrderDto\" />
+    <Folder Include="Dto\ImagingReportDto\" />
+    <Folder Include="Dto\AllergyDtos\" />
+    <Folder Include="Dto\ImagingDtos\" />
+    <Folder Include="Dto\ImagingDtos\Response\" />
+    <Folder Include="Dto\MedicalHistoryDtos\" />
+    <Folder Include="Dto\MedicationListDtos\" />
+    <Folder Include="Dto\EncounterDtos\" />
+    <Folder Include="Dto\EncounterDtos\Request\" />
+    <Folder Include="Dto\EncounterDtos\Response\" />
+    <Folder Include="Dto\ProcedureCodeDtos\" />
+    <Folder Include="MappingProfiles\" />
+    <Folder Include="Repository\" />
+    <Folder Include="Repository\EncounterRepo\" />
+    <Folder Include="Repository\ImagingOrderRepository\" />
+    <Folder Include="Repository\ImagingReportRepository\" />
+    <Folder Include="Repository\ProcedureCodeRepository\" />
+    <Folder Include="Repository\UserRepo\" />
+    <Folder Include="Repository\UserRoleRepository\" />
+    <Folder Include="Services\EncounterServices\" />
+    <Folder Include="Services\ImagingOrderServices\" />
+    <Folder Include="Services\ImagingReportServices\" />
+    <Folder Include="Dto\ProblemListDtos\" />
+    <Folder Include="Dto\SOAPNoteDtos\" />
+    <Folder Include="Dto\SOAPNoteDtos\Request\" />
+    <Folder Include="Dto\SOAPNoteDtos\Response\" />
+    <Folder Include="MappingProfiles\" />
+    <Folder Include="Repository\" />
+    <Folder Include="Repository\EncounterRepo\" />
+    <Folder Include="Repository\ImagingRepo\" />
+    <Folder Include="Repository\MedicalHistoryRepository\" />
+    <Folder Include="Repository\ProblemListRepository\" />
+    <Folder Include="Repository\SOAPNoteRepo\" />
+    <Folder Include="Repository\ImagingOrderRepository\" />
+    <Folder Include="Repository\UserRepo\" />
+    <Folder Include="Repository\UserRoleRepository\" />
+    <Folder Include="Services\EncounterServices\" />
+    <Folder Include="Services\ImagingServices\" />
+    <Folder Include="Services\MedicalHistoryServices\" />
+    <Folder Include="Services\ProblemListServices\" />
+    <Folder Include="Services\ProcedureCodeServices\" />
+    <Folder Include="Services\SOAPNoteService\" />
+    <Folder Include="Services\ImagingOrderServices\" />
+    <Folder Include="Utility\TokenUtility\" />
+    <Folder Include="Services\UserServices\" />
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+ 
+  <ItemGroup>
+    <ProjectReference Include="..\MediRecords.Domain\MediRecords.Domain.csproj" />
+  </ItemGroup>
+ 
+</Project>
+ 

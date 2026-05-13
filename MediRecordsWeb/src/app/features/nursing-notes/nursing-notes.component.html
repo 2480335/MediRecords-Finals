@@ -1,0 +1,204 @@
+<section class="nursing-page">
+
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-pencil-square"></i>
+        <span class="header-pulse"></span>
+      </div>
+      <div>
+        <span class="eyebrow">Nursing</span>
+        <h1 class="page-title">Nursing notes</h1>
+        <p class="page-sub">
+          Add concise nursing notes for an encounter. Notes are limited to {{ maxLength }} characters.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-grid">
+
+    <!-- ── Form card ─────────────────────────────────────── -->
+    <section class="form-card">
+      <div class="form-banner">
+        <div class="form-banner-glow"></div>
+        <div class="form-banner-icon"><i class="bi bi-journal-plus"></i></div>
+        <div>
+          <h2>New nursing note</h2>
+          <p>Quick observation, vitals snapshot, hand-off, or status change.</p>
+        </div>
+      </div>
+
+      <form class="form-body" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        <div class="field">
+          @if (lockedEncounter(); as le) {
+            <label>Encounter</label>
+            <div class="locked-encounter">
+              <i class="bi bi-lock-fill me-1"></i>
+              <strong>Encounter #{{ le.id }}</strong>
+              @if (le.patientName) { <span class="muted"> · {{ le.patientName }}</span> }
+            </div>
+          } @else {
+            <label>Encounter *</label>
+            <div class="prefix-input">
+              <span class="prefix">#</span>
+              <select class="text-input" formControlName="encounterId">
+                <option [ngValue]="0">-- Select encounter --</option>
+                @for (e of encounters(); track e.encounterId) {
+                  <option [ngValue]="e.encounterId">{{ e.encounterId }}</option>
+                }
+              </select>
+            </div>
+            @if (form.controls.encounterId.touched && form.controls.encounterId.errors) {
+              <small class="error">Encounter selection is required.</small>
+            }
+          }
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label>Notes *</label>
+            <span class="char-count" [class.warning]="remainingChars() <= 10" [class.over]="remainingChars() < 0">
+              {{ remainingChars() }} chars left
+            </span>
+          </div>
+          <textarea
+            class="text-input"
+            rows="3"
+            [maxlength]="maxLength"
+            formControlName="notes"
+            placeholder="e.g. Pt resting comfortably. Pain 2/10. Tolerating PO."></textarea>
+          @if (form.controls.notes.touched && form.controls.notes.errors; as e) {
+            <small class="error">
+              @if (e['required']) { Notes are required. }
+              @else if (e['maxlength']) { Max {{ maxLength }} characters. }
+            </small>
+          }
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>Saving…
+            } @else {
+              <i class="bi bi-check2 me-1"></i> Add note
+            }
+          </button>
+        </div>
+      </form>
+    </section>
+
+
+    <!-- ── Side log ──────────────────────────────────────── -->
+    <aside class="log-card">
+      <header class="log-head">
+        <div>
+          <h3>This session</h3>
+          <p>Notes you've added since opening this page. Use the pencil to edit.</p>
+        </div>
+        @if (notes().length > 0) {
+          <button class="link-btn" (click)="clearLog()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Clear
+          </button>
+        }
+      </header>
+
+      @if (notes().length === 0) {
+        <div class="log-empty">
+          <div class="log-empty-icon"><i class="bi bi-clipboard2-pulse"></i></div>
+          <strong>No notes yet</strong>
+          <span>Notes you add will appear here for quick edits.</span>
+        </div>
+      } @else {
+        <ul class="notes-list">
+          @for (n of notes(); track n.nursingNoteId) {
+            <li class="note-item">
+              <div class="note-head">
+                <span class="note-id">Note #{{ n.nursingNoteId }}</span>
+                <span class="note-encounter">Encounter #{{ n.encounterId }}</span>
+                <button type="button" class="note-edit" (click)="openEdit(n)" aria-label="Edit">
+                  <i class="bi bi-pencil"></i>
+                </button>
+              </div>
+              <p class="note-body">{{ n.notes }}</p>
+              <footer class="note-foot">
+                <span class="note-by">
+                  <span class="note-avatar">{{ initials(n.recordedBy) }}</span>
+                  {{ n.recordedBy }}
+                </span>
+                <span class="note-date">{{ n.recordedDate | date:'short' }}</span>
+              </footer>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="log-tip">
+        <i class="bi bi-info-circle"></i>
+        <p>
+          Notes are short by design. For longer narratives, use SOAP notes
+          attached to the encounter.
+        </p>
+      </div>
+    </aside>
+
+  </div>
+
+
+  <!-- ── Edit modal ─────────────────────────────────────── -->
+  @if (showEdit()) {
+    <div class="modal-backdrop-custom" (click)="closeEdit()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Note #{{ editing()?.nursingNoteId }}</span>
+            <h2>Edit nursing note</h2>
+            <p>
+              Encounter #{{ editing()?.encounterId }} ·
+              recorded by {{ editing()?.recordedBy }}
+            </p>
+          </div>
+          <button class="icon-btn" (click)="closeEdit()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </header>
+
+        <form class="modal-form" [formGroup]="editForm" (ngSubmit)="submitEdit()" novalidate>
+          <div class="field">
+            <div class="label-row">
+              <label>Notes *</label>
+              <span class="char-count" [class.warning]="editRemainingChars() <= 10" [class.over]="editRemainingChars() < 0">
+                {{ editRemainingChars() }} chars left
+              </span>
+            </div>
+            <textarea
+              class="text-input"
+              rows="3"
+              [maxlength]="maxLength"
+              formControlName="notes"></textarea>
+            @if (editForm.controls.notes.touched && editForm.controls.notes.errors; as e) {
+              <small class="error">
+                @if (e['required']) { Notes are required. }
+                @else if (e['maxlength']) { Max {{ maxLength }} characters. }
+              </small>
+            }
+          </div>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeEdit()" [disabled]="saving()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Saving…
+              } @else {
+                <i class="bi bi-check2 me-1"></i> Save changes
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+</section>

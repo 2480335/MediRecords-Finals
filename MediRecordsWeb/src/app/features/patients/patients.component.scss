@@ -1,0 +1,622 @@
+@use '../admin/admin-shared';
+
+$ink-900: #0b1426;
+$ink-700: #334155;
+$ink-500: #64748b;
+$ink-400: #94a3b8;
+$ink-300: #cbd5e1;
+$ink-200: #e2e8f0;
+$ink-100: #f1f5f9;
+$primary: #3b82f6;
+$primary-700: #1d4ed8;
+$accent: #06b6d4;
+$violet: #8b5cf6;
+$success: #10b981;
+$amber: #f59e0b;
+$danger: #dc2626;
+
+:host {
+  display: block;
+  padding: 1.75rem;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #eef4ff 0%, #f8fafc 100%);
+
+  @media (max-width: 575.98px) { padding: 1.25rem 1rem; }
+}
+
+.patients-page { display: flex; flex-direction: column; }
+
+/* ─── Header ───────────────────────────────────────────── */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  .header-content { display: flex; align-items: center; gap: 1rem; }
+
+  .eyebrow {
+    display: inline-block;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: $primary-700;
+    margin-bottom: 4px;
+  }
+
+  .page-title {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 1.75rem;
+    color: $ink-900;
+    margin: 0 0 4px;
+    letter-spacing: -0.02em;
+  }
+
+  .page-sub { color: $ink-500; font-size: 0.9375rem; margin: 0; }
+}
+
+.header-icon {
+  position: relative;
+  width: 56px; height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, $primary 0%, $accent 100%);
+  color: #fff; font-size: 1.4rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 8px 20px -8px rgba(59, 130, 246, 0.5);
+
+  .header-pulse {
+    position: absolute; inset: -4px; border-radius: 20px;
+    border: 1.5px solid rgba(59, 130, 246, 0.4);
+    animation: pulse 2.4s ease-out infinite;
+  }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.85; transform: scale(0.95); }
+  80% { opacity: 0; transform: scale(1.15); }
+  100% { opacity: 0; transform: scale(1.15); }
+}
+
+/* ─── Patient list toolbar ─────────────────────────────── */
+.patients-toolbar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+
+  .search {
+    flex: 1;
+    min-width: 240px;
+    position: relative;
+
+    > i {
+      position: absolute;
+      left: 0.875rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: $ink-400;
+      font-size: 0.95rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.6875rem 0.875rem 0.6875rem 2.25rem;
+      border: 1px solid $ink-200;
+      border-radius: 10px;
+      background: #fff;
+      color: $ink-900;
+      font-size: 0.9375rem;
+
+      &:focus {
+        outline: none;
+        border-color: $primary;
+        box-shadow: 0 0 0 3px rgba($primary, 0.12);
+      }
+    }
+  }
+
+  .toolbar-filters { display: flex; gap: 0.625rem; align-items: center; flex-wrap: wrap; }
+
+  .segmented {
+    display: inline-flex;
+    background: #fff;
+    border: 1px solid $ink-200;
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+
+    button {
+      border: 0;
+      background: transparent;
+      padding: 0.4375rem 0.75rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: $ink-500;
+      border-radius: 7px;
+      cursor: pointer;
+
+      &.active {
+        background: rgba($primary, 0.1);
+        color: $primary-700;
+      }
+    }
+  }
+
+  .btn-compact { padding: 0.5rem 0.875rem; font-size: 0.875rem; }
+}
+
+/* Clickable table rows */
+.table-card .row-clickable {
+  cursor: pointer;
+  transition: background 0.12s ease;
+  &:hover { background: rgba($primary, 0.04); }
+}
+
+.cell-user-block {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.cell-user-sub {
+  font-size: 0.75rem;
+  color: $ink-500;
+  font-weight: 500;
+}
+
+.text-muted { color: $ink-500; }
+.muted { color: $ink-400; font-size: 0.875em; }
+
+/* ─── Lookup card ──────────────────────────────────────── */
+.lookup-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #ffffff, #f5f9ff);
+  border: 1px solid $ink-200;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px -16px rgba(15, 23, 42, 0.18);
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+
+.lookup-glow {
+  position: absolute;
+  top: -40%; right: -5%;
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.18), transparent 65%);
+  filter: blur(20px);
+  pointer-events: none;
+}
+
+.lookup-icon {
+  width: 48px; height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, $primary, $accent);
+  color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.lookup-form {
+  flex: 1;
+  display: flex; flex-wrap: wrap;
+  align-items: flex-end; gap: 1rem;
+  z-index: 1;
+}
+
+.lookup-fields { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 4px; }
+
+.lookup-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: $ink-500;
+}
+
+.lookup-input {
+  position: relative;
+  display: flex; align-items: center;
+  background: #fff;
+  border: 1.5px solid $ink-200;
+  border-radius: 12px;
+
+  &:focus-within { border-color: $primary; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14); }
+
+  .prefix { padding: 0 0.5rem 0 1rem; color: $ink-400; font-weight: 700; }
+
+  input {
+    flex: 1;
+    border: none; outline: none; background: transparent;
+    padding: 0.7rem 1rem 0.7rem 0;
+    font-size: 1rem;
+    color: $ink-900;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.lookup-actions { display: flex; gap: 0.5rem; }
+
+.error { color: $danger; font-size: 0.75rem; font-weight: 500; margin-top: 4px; }
+
+/* ─── Error banner ─────────────────────────────────────── */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 1.125rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fef2f2 0%, #fff7f7 100%);
+  border: 1px solid #fecaca;
+  margin-bottom: 1.25rem;
+
+  > i { color: $danger; font-size: 1.25rem; flex-shrink: 0; }
+  > div { display: flex; flex-direction: column; gap: 2px; }
+  strong { color: #991b1b; font-size: 0.9375rem; font-weight: 700; }
+  span { color: $ink-700; font-size: 0.8125rem; }
+}
+
+/* ─── Patient detail card (rendered inside modal-shell as a popup) ── */
+.patient-card {
+  background: #fff;
+  border: 1px solid $ink-200;
+  border-radius: 18px;
+  padding: 1.75rem;
+  box-shadow: 0 24px 60px -20px rgba(15, 23, 42, 0.35);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.patient-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+
+  .icon-btn {
+    background: $ink-100;
+    border: 1px solid $ink-200;
+    color: $ink-700;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+
+    &:hover { background: $ink-200; color: $ink-900; }
+  }
+}
+
+.patient-head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+
+  > .patient-id { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+}
+
+.patient-avatar {
+  width: 64px; height: 64px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, $violet, $primary);
+  color: #fff;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 1.4rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 8px 20px -10px rgba(139, 92, 246, 0.5),
+              inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.patient-name {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: $ink-900;
+  letter-spacing: -0.02em;
+}
+
+.patient-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.mrn-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #eff6ff, #ecfeff);
+  color: $primary-700;
+  font-weight: 600;
+  font-size: 0.75rem;
+  border: 1px solid #dbeafe;
+}
+
+.patient-id-pill {
+  font-size: 0.75rem;
+  color: $ink-500;
+  font-weight: 600;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+
+  .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  &[data-tone='success'] { background: #ecfdf5; color: #047857; }
+  &[data-tone='muted']   { background: $ink-100; color: $ink-500; }
+  &[data-tone='danger']  { background: #fef2f2; color: #b91c1c; }
+
+  &--lg { padding: 4px 12px 4px 9px; font-size: 0.75rem; }
+}
+
+/* ─── Info grid ────────────────────────────────────────── */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px dashed $ink-200;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0.75rem 1rem;
+  background: $ink-100;
+  border-radius: 12px;
+
+  &--wide { grid-column: 1 / -1; }
+}
+
+.info-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: $ink-500;
+}
+
+.info-value {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-weight: 600;
+  color: $ink-900;
+  font-size: 0.9375rem;
+
+  .muted { color: $ink-500; font-weight: 500; }
+}
+
+/* ─── Chip sections ────────────────────────────────────── */
+.chip-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.chip-section {
+  background: $ink-100;
+  border-radius: 14px;
+  padding: 1rem 1.125rem;
+
+  h3 {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-weight: 700;
+    color: $ink-900;
+    font-size: 0.9375rem;
+    margin: 0 0 0.625rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .muted {
+    color: $ink-500;
+    font-size: 0.8125rem;
+    font-style: italic;
+    margin: 0;
+  }
+}
+
+.chip-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    background: #fff;
+    border: 1px solid $ink-200;
+    color: $ink-700;
+  }
+
+  &--problem li {
+    background: linear-gradient(135deg, #fffbeb, #fef9c3);
+    border-color: #fde68a;
+    color: #92400e;
+  }
+
+  &--allergy li {
+    background: linear-gradient(135deg, #fef2f2, #fdf2f8);
+    border-color: #fecaca;
+    color: #b91c1c;
+  }
+
+  &--history li {
+    background: linear-gradient(135deg, #f5f3ff, #eff6ff);
+    border-color: #ddd6fe;
+    color: #6d28d9;
+  }
+}
+
+/* ─── Hero (no patient yet) ────────────────────────────── */
+.hero-empty {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 3rem 1.5rem;
+  background: #fff;
+  border: 1px dashed $ink-300;
+  border-radius: 18px;
+  gap: 0.5rem;
+
+  h2 {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: $ink-900;
+    margin: 0;
+  }
+
+  p { color: $ink-500; margin: 0; max-width: 56ch; font-size: 0.9375rem; }
+}
+
+.hero-illustration {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 1rem;
+  height: 96px; width: 220px;
+}
+
+.hero-glyph {
+  position: absolute;
+  width: 76px; height: 76px;
+  border-radius: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1.6rem;
+  color: #fff;
+  box-shadow: 0 14px 28px -14px rgba(15, 23, 42, 0.35);
+
+  &--a { background: linear-gradient(135deg, $primary, $accent);
+         transform: translateX(-66px) rotate(-8deg); z-index: 1; }
+  &--b { background: linear-gradient(135deg, $violet, #ec4899);
+         transform: translateY(-6px); z-index: 2; }
+  &--c { background: linear-gradient(135deg, #14b8a6, #22c55e);
+         transform: translateX(66px) rotate(8deg); z-index: 1; }
+}
+
+/* ─── Modal-specific ──────────────────────────────────── */
+.modal-card--wide { max-width: 760px; }
+
+.form-section-title {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: $primary-700;
+  margin: 1rem 0 0.5rem;
+
+  &:first-child { margin-top: 0; }
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.status-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 12px;
+  border: 1.5px solid $ink-200;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: $ink-700;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+
+  input { position: absolute; opacity: 0; pointer-events: none; }
+
+  &:hover { background: $ink-100; }
+
+  &.selected {
+    background: linear-gradient(135deg, var(--from), var(--to));
+    border-color: transparent;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px -6px var(--from);
+  }
+
+  &[data-tone='success'] { --from: #14b8a6; --to: #22c55e; }
+  &[data-tone='muted']   { --from: #94a3b8; --to: #64748b; }
+  &[data-tone='danger']  { --from: #f43f5e; --to: #b91c1c; }
+}
+
+.grid-2-span { grid-column: 1 / -1; }
+
+/* +91 prefixed phone input */
+.phone-input {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #cbd5e1;
+  border-radius: .5rem;
+  overflow: hidden;
+  background: #fff;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.phone-input:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, .18);
+}
+
+.phone-prefix {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 .75rem;
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 600;
+  font-size: .87rem;
+  border-right: 1px solid #e2e8f0;
+}
+
+.phone-text {
+  flex: 1;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: .5rem .75rem !important;
+}
+
+.phone-text:focus {
+  box-shadow: none !important;
+  outline: none !important;
+}

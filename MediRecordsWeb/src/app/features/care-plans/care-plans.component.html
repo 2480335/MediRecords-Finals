@@ -1,0 +1,295 @@
+<section class="careplans-page">
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-clipboard-heart"></i>
+      </div>
+      <div>
+        <span class="eyebrow">Patient management</span>
+        <h1 class="page-title">Care plans</h1>
+        <p class="page-sub">
+          Define long-term care goals and instructions to coordinate the team
+          around each patient.
+        </p>
+      </div>
+    </div>
+    @if (canCreate()) {
+      <button type="button" class="btn-primary" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i> New care plan
+      </button>
+    }
+  </header>
+
+  <!-- ── Stats ──────────────────────────────────────────── -->
+  <div class="stats-grid">
+    <article class="stat-card stat-card--primary">
+      <div class="stat-icon"><i class="bi bi-collection"></i></div>
+      <div>
+        <span class="stat-label">Total plans</span>
+        <span class="stat-value">{{ stats().total }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--accent">
+      <div class="stat-icon"><i class="bi bi-activity"></i></div>
+      <div>
+        <span class="stat-label">Active</span>
+        <span class="stat-value">{{ stats().active }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--success">
+      <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
+      <div>
+        <span class="stat-label">Completed</span>
+        <span class="stat-value">{{ stats().completed }}</span>
+      </div>
+    </article>
+  </div>
+
+  <!-- ── Toolbar ────────────────────────────────────────── -->
+  <header class="toolbar">
+    <div class="search">
+      <i class="bi bi-search"></i>
+      <input
+        type="search"
+        placeholder="Search by patient name, ID, or instructions…"
+        [value]="searchTerm()"
+        (input)="setSearch($any($event.target).value)" />
+    </div>
+    <div class="toolbar-filters">
+      <div class="segmented" role="tablist">
+        <button [class.active]="statusFilter() === 'all'" (click)="setStatus('all')">All</button>
+        <button [class.active]="statusFilter() === 'active'" (click)="setStatus('active')">Active</button>
+        <button [class.active]="statusFilter() === 'completed'" (click)="setStatus('completed')">Completed</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Grid of cards ──────────────────────────────────── -->
+  @if (loading()) {
+    <div class="grid">
+      @for (i of [1,2,3,4,5,6]; track i) {
+        <div class="plan-card plan-card--skeleton">
+          <div class="sk sk-avatar"></div>
+          <div class="sk sk-line sk-line--lg"></div>
+          <div class="sk sk-line sk-line--sm"></div>
+          <div class="sk sk-line sk-line--xs"></div>
+        </div>
+      }
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="empty-card">
+      <div class="empty-icon"><i class="bi bi-clipboard-heart"></i></div>
+      <h3>No care plans found</h3>
+      <p>Try adjusting filters{{ canCreate() ? ', or create the first plan.' : '.' }}</p>
+      @if (canCreate()) {
+        <button type="button" class="btn-primary" (click)="openCreate()">
+          <i class="bi bi-plus-lg me-1"></i> New care plan
+        </button>
+      }
+    </div>
+  } @else {
+    <div class="grid">
+      @for (p of filtered(); track p.carePlanId) {
+        <article
+          class="plan-card"
+          [class.is-completed]="p.status"
+          (click)="open(p)">
+          <header class="plan-head">
+            <div class="plan-avatar">{{ initials(p.patientName) }}</div>
+            <div class="plan-id">
+              <span class="plan-name">{{ p.patientName }}</span>
+              <span class="plan-meta">Patient #{{ p.patientId }} · Plan #{{ p.carePlanId }}</span>
+            </div>
+            <span class="plan-status" [attr.data-tone]="p.status ? 'success' : 'active'">
+              <span class="dot"></span>
+              {{ p.status ? 'Completed' : 'Active' }}
+            </span>
+          </header>
+
+          <div class="plan-goals">
+            <span class="plan-goals-label">
+              <i class="bi bi-bullseye me-1"></i>Goals
+            </span>
+            <ul>
+              @for (g of parsedGoals(p).slice(0, 3); track g) {
+                <li>{{ g }}</li>
+              }
+              @if (parsedGoals(p).length > 3) {
+                <li class="muted">+{{ parsedGoals(p).length - 3 }} more</li>
+              }
+              @if (parsedGoals(p).length === 0) {
+                <li class="muted">No goals set</li>
+              }
+            </ul>
+          </div>
+
+          <p class="plan-instructions">{{ p.instructions || '—' }}</p>
+
+          <footer class="plan-foot">
+            <span class="open-link">View details <i class="bi bi-arrow-right"></i></span>
+          </footer>
+        </article>
+      }
+    </div>
+  }
+
+
+  <!-- ── Detail drawer ──────────────────────────────────── -->
+  @if (selected()) {
+    <div class="modal-backdrop-custom" (click)="close()"></div>
+    <aside class="detail-drawer">
+      <header class="detail-head">
+        <div class="detail-head-row">
+          <span class="plan-avatar plan-avatar--lg">{{ initials(selected()!.patientName) }}</span>
+          <div>
+            <span class="eyebrow">Care plan #{{ selected()!.carePlanId }}</span>
+            <h2>{{ selected()!.patientName }}</h2>
+            <span class="muted">Patient #{{ selected()!.patientId }}</span>
+          </div>
+          <button class="icon-btn" (click)="close()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <span class="plan-status plan-status--lg" [attr.data-tone]="selected()!.status ? 'success' : 'active'">
+          <span class="dot"></span>
+          {{ selected()!.status ? 'Completed' : 'Active' }}
+        </span>
+      </header>
+
+      <div class="detail-body">
+        @if (detailLoading()) {
+          <div class="muted-row">
+            <span class="spinner-border spinner-border-sm me-2"></span>Loading details…
+          </div>
+        }
+
+        <section class="detail-section">
+          <h3><i class="bi bi-bullseye me-1"></i> Goals</h3>
+          @if (parsedGoals(selected()).length > 0) {
+            <ul class="goal-pills">
+              @for (g of parsedGoals(selected()); track g) {
+                <li>{{ g }}</li>
+              }
+            </ul>
+          } @else {
+            <p class="muted">No goals defined.</p>
+          }
+        </section>
+
+        <section class="detail-section">
+          <h3><i class="bi bi-clipboard-pulse me-1"></i> Instructions</h3>
+          <p class="instructions">{{ selected()!.instructions || '—' }}</p>
+        </section>
+      </div>
+    </aside>
+  }
+
+
+  <!-- ── Create modal ────────────────────────────────────── -->
+  @if (showCreate()) {
+    <div class="modal-backdrop-custom" (click)="closeCreate()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Care plan</span>
+            <h2>Create a new care plan</h2>
+            <p>Outline goals and instructions to guide the patient's care.</p>
+          </div>
+          <button class="icon-btn" (click)="closeCreate()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </header>
+
+        <form class="modal-form" [formGroup]="createForm" (ngSubmit)="submitCreate()" novalidate>
+          <div class="grid-2">
+            <div class="field">
+              <label>Patient *</label>
+              <select class="text-input" formControlName="patientId">
+                <option [ngValue]="0">-- Select patient --</option>
+                @for (p of patients(); track p.patientId) {
+                  <option [ngValue]="p.patientId">{{ p.name }}</option>
+                }
+              </select>
+              @if (createForm.controls.patientId.touched && createForm.controls.patientId.errors) {
+                <small class="error">Patient selection is required.</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Initial status</label>
+              <div class="toggle">
+                <label class="toggle-option" [class.selected]="!createForm.controls.status.value">
+                  <input type="radio" [value]="false" formControlName="status" />
+                  <span>Active</span>
+                </label>
+                <label class="toggle-option" [class.selected]="createForm.controls.status.value">
+                  <input type="radio" [value]="true" formControlName="status" />
+                  <span>Completed</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Goals *</label>
+            <div class="goals-builder">
+              <div class="goals-input">
+                <input
+                  type="text"
+                  class="text-input"
+                  placeholder="e.g. Reduce A1C below 7.0"
+                  [value]="newGoal()"
+                  (input)="setNewGoal($any($event.target).value)"
+                  (keydown.enter)="$event.preventDefault(); addGoal()" />
+                <button type="button" class="btn-secondary" (click)="addGoal()">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              </div>
+              @if (goals().length > 0) {
+                <ul class="goal-pill-list">
+                  @for (g of goals(); track g; let i = $index) {
+                    <li>
+                      <span>{{ g }}</span>
+                      <button type="button" (click)="removeGoal(i)" aria-label="Remove">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <span class="goal-hint">Add at least one measurable goal.</span>
+              }
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Instructions *</label>
+            <textarea
+              class="text-input"
+              rows="4"
+              formControlName="instructions"
+              placeholder="Lifestyle, monitoring, medications, follow-up frequency…"></textarea>
+            @if (createForm.controls.instructions.touched && createForm.controls.instructions.errors) {
+              <small class="error">Instructions are required.</small>
+            }
+          </div>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeCreate()" [disabled]="saving()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Creating…
+              } @else {
+                <i class="bi bi-check2 me-1"></i> Create care plan
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+</section>

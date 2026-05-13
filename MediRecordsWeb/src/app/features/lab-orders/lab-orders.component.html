@@ -1,0 +1,389 @@
+<section class="laborders-page">
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-droplet-half"></i>
+        <span class="header-pulse"></span>
+      </div>
+      <div>
+        <span class="eyebrow">Diagnostics</span>
+        <h1 class="page-title">Lab orders</h1>
+        <p class="page-sub">
+          Order lab tests, monitor status, and mark completion when results are in.
+        </p>
+      </div>
+    </div>
+    @if (canCreate()) {
+      <button type="button" class="btn-primary" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i> New lab order
+      </button>
+    }
+  </header>
+
+  <!-- ── Stats ──────────────────────────────────────────── -->
+  <div class="stats-grid">
+    <article class="stat-card stat-card--primary">
+      <div class="stat-icon"><i class="bi bi-collection"></i></div>
+      <div>
+        <span class="stat-label">Visible</span>
+        <span class="stat-value">{{ stats().total }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--warn">
+      <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+      <div>
+        <span class="stat-label">Open</span>
+        <span class="stat-value">{{ stats().open }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--success">
+      <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
+      <div>
+        <span class="stat-label">Completed</span>
+        <span class="stat-value">{{ stats().completed }}</span>
+      </div>
+    </article>
+  </div>
+
+  <!-- ── Toolbar ────────────────────────────────────────── -->
+  <header class="toolbar">
+    <form class="filter-form" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+      <div class="filter">
+        <label>Encounter</label>
+        <select class="text-input" formControlName="encounterId">
+          <option value="">Any encounter</option>
+          @for (e of encounters(); track e.encounterId) {
+            <option [value]="e.encounterId">{{ e.encounterId }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter">
+        <label>Ordered by (user)</label>
+        <input class="text-input" type="number" formControlName="orderedBy" placeholder="optional" />
+      </div>
+      <div class="filter">
+        <label>Order date</label>
+        <input class="text-input" type="date" formControlName="orderDate" />
+      </div>
+      <div class="filter-buttons">
+        <button type="submit" class="btn-primary">
+          <i class="bi bi-funnel me-1"></i> Apply
+        </button>
+        <button type="button" class="btn-secondary" (click)="resetFilters()">Reset</button>
+      </div>
+    </form>
+
+    <div class="search">
+      <i class="bi bi-search"></i>
+      <input
+        type="search"
+        placeholder="Search by ID, encounter or test…"
+        [value]="searchTerm()"
+        (input)="setSearch($any($event.target).value)" />
+    </div>
+
+    <div class="status-tabs">
+      <button class="tab" [class.active]="scope() === 'all'" (click)="setScope('all')">All</button>
+      <button class="tab" [class.active]="scope() === 'open'" (click)="setScope('open')">
+        <span class="tab-dot tab-dot--warn"></span> Open
+      </button>
+      <button class="tab" [class.active]="scope() === 'completed'" (click)="setScope('completed')">
+        <span class="tab-dot tab-dot--ok"></span> Completed
+      </button>
+    </div>
+  </header>
+
+  <!-- ── List ───────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="grid">
+      @for (i of [1,2,3,4]; track i) {
+        <div class="lab-card lab-card--skeleton">
+          <div class="sk sk-icon"></div>
+          <div class="sk sk-line sk-line--lg"></div>
+          <div class="sk sk-line sk-line--sm"></div>
+        </div>
+      }
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="empty-card">
+      <div class="empty-icon"><i class="bi bi-eyedropper"></i></div>
+      <h3>No lab orders to show</h3>
+      <p>Adjust filters{{ canCreate() ? ' or create a new lab order.' : '.' }}</p>
+      @if (canCreate()) {
+        <button class="btn-primary" (click)="openCreate()">
+          <i class="bi bi-plus-lg me-1"></i> New lab order
+        </button>
+      }
+    </div>
+  } @else {
+    <ul class="grid">
+      @for (o of filtered(); track o.labOrderId) {
+        <li
+          class="lab-card"
+          [attr.data-tone]="o.status ? 'ok' : 'warn'"
+          (click)="open(o)">
+          <div class="lab-icon">
+            <i class="bi bi-droplet-half"></i>
+            <span class="lab-id">#{{ o.labOrderId }}</span>
+          </div>
+
+          <div class="lab-body">
+            <header class="lab-head">
+              <div>
+                <span class="lab-encounter">Encounter #{{ o.encounterId }}</span>
+                <span class="lab-meta">
+                  Ordered by user #{{ o.orderedBy }} ·
+                  {{ o.orderDate | date:'mediumDate' }}
+                </span>
+              </div>
+              <span class="status-chip" [attr.data-tone]="o.status ? 'success' : 'warn'">
+                <span class="dot"></span>
+                {{ o.status ? 'Completed' : 'Open' }}
+              </span>
+            </header>
+
+            <div class="lab-tests">
+              @for (t of parsedTests(o).slice(0, 3); track t.testName) {
+                <span class="test-chip">{{ t.testName }}</span>
+              }
+              @if (parsedTests(o).length > 3) {
+                <span class="test-chip test-chip--more">
+                  +{{ parsedTests(o).length - 3 }} more
+                </span>
+              }
+              @if (parsedTests(o).length === 0) {
+                <span class="test-chip test-chip--empty">No tests recorded</span>
+              }
+            </div>
+
+            <footer class="lab-foot">
+              <span class="open-link">View order <i class="bi bi-arrow-right ms-1"></i></span>
+            </footer>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+
+
+  <!-- ── Detail drawer ──────────────────────────────────── -->
+  @if (selected(); as o) {
+    <div class="modal-backdrop-custom" (click)="close()"></div>
+    <aside class="detail-drawer">
+      <header class="detail-head">
+        <div class="detail-head-row">
+          <span class="lab-icon lab-icon--lg" [attr.data-tone]="o.status ? 'ok' : 'warn'">
+            <i class="bi bi-droplet-half"></i>
+          </span>
+          <div>
+            <span class="eyebrow">Lab order #{{ o.labOrderId }}</span>
+            <h2>Encounter #{{ o.encounterId }}</h2>
+            <span class="muted">
+              Ordered by user #{{ o.orderedBy }} ·
+              {{ o.orderDate | date:'mediumDate' }}
+            </span>
+          </div>
+          <button class="icon-btn" (click)="close()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <span class="status-chip status-chip--lg" [attr.data-tone]="o.status ? 'success' : 'warn'">
+          <span class="dot"></span>
+          {{ o.status ? 'Completed' : 'Awaiting completion' }}
+        </span>
+      </header>
+
+      <div class="detail-body">
+        @if (detailLoading()) {
+          <div class="muted-row">
+            <span class="spinner-border spinner-border-sm me-2"></span>Loading order…
+          </div>
+        }
+
+        <section class="detail-section">
+          <h3><i class="bi bi-list-check me-1"></i> Requested tests ({{ parsedTests(o).length }})</h3>
+          @if (parsedTests(o).length > 0) {
+            <ul class="test-list">
+              @for (t of parsedTests(o); track t.testName) {
+                <li class="test-item">
+                  <span class="test-bullet"><i class="bi bi-droplet-half"></i></span>
+                  <div>
+                    <span class="test-name">{{ t.testName }}</span>
+                    @if (t.notes) {
+                      <span class="test-notes">{{ t.notes }}</span>
+                    }
+                  </div>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="muted">No tests recorded.</p>
+          }
+        </section>
+
+        @if (canMark()) {
+          <section class="detail-section">
+            <h3><i class="bi bi-toggles me-1"></i> Update status</h3>
+            <div class="status-actions">
+              <button
+                type="button"
+                class="status-btn"
+                [attr.data-tone]="'warn'"
+                [class.selected]="!o.status"
+                [disabled]="statusSaving() || !o.status"
+                (click)="markStatus(o, false)">
+                <i class="bi bi-clock-history"></i>
+                <span>Mark as Open</span>
+              </button>
+              <button
+                type="button"
+                class="status-btn"
+                [attr.data-tone]="'ok'"
+                [class.selected]="o.status"
+                [disabled]="statusSaving() || o.status"
+                (click)="markStatus(o, true)">
+                <i class="bi bi-check2-circle"></i>
+                <span>Mark Completed</span>
+              </button>
+            </div>
+            @if (statusSaving()) {
+              <div class="muted-row">
+                <span class="spinner-border spinner-border-sm me-2"></span>Updating status…
+              </div>
+            }
+          </section>
+        }
+
+        <section class="detail-section">
+          <h3><i class="bi bi-info-circle me-1"></i> Raw data</h3>
+          <pre class="raw-block">{{ o.testJson }}</pre>
+        </section>
+      </div>
+    </aside>
+  }
+
+
+  <!-- ── Create modal ───────────────────────────────────── -->
+  @if (showCreate()) {
+    <div class="modal-backdrop-custom" (click)="closeCreate()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card modal-card--wide">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Lab orders</span>
+            <h2>Create a new lab order</h2>
+            <p>Bundle multiple tests for the same encounter.</p>
+          </div>
+          <button class="icon-btn" (click)="closeCreate()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </header>
+
+        <form class="modal-form" [formGroup]="createForm" (ngSubmit)="submitCreate()" novalidate>
+          <div class="grid-2">
+            <div class="field">
+              @if (lockedEncounter(); as le) {
+                <label>Encounter</label>
+                <div class="locked-encounter">
+                  <i class="bi bi-lock-fill me-1"></i>
+                  <strong>Encounter #{{ le.id }}</strong>
+                  @if (le.patientName) { <span class="muted"> · {{ le.patientName }}</span> }
+                </div>
+              } @else {
+                <label>Encounter *</label>
+                <select class="text-input" formControlName="encounterId">
+                  <option [ngValue]="0">-- Select encounter --</option>
+                  @for (e of encounters(); track e.encounterId) {
+                    <option [ngValue]="e.encounterId">{{ e.encounterId }}</option>
+                  }
+                </select>
+                @if (createForm.controls.encounterId.touched && createForm.controls.encounterId.errors) {
+                  <small class="error">Encounter selection is required.</small>
+                }
+              }
+            </div>
+
+            <div class="field">
+              <label>Order date</label>
+              <input class="text-input" type="date" formControlName="orderDate" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Tests</label>
+            <div class="tests-builder">
+              <div class="tests-input-row">
+                <input
+                  type="text"
+                  class="text-input"
+                  placeholder="Test name (e.g. CBC, HbA1c)"
+                  [value]="newTestName()"
+                  (input)="setNewTestName($any($event.target).value)"
+                  (keydown.enter)="$event.preventDefault(); addCustomTest()" />
+                <input
+                  type="text"
+                  class="text-input"
+                  placeholder="Notes (optional)"
+                  [value]="newTestNotes()"
+                  (input)="setNewTestNotes($any($event.target).value)" />
+                <button type="button" class="btn-secondary tests-add-btn" (click)="addCustomTest()">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              </div>
+
+              <span class="tests-helper">Quick add common tests:</span>
+              <div class="common-tests">
+                @for (t of commonTests; track t) {
+                  <button
+                    type="button"
+                    class="common-test-pill"
+                    (click)="pickCommon(t)">
+                    <i class="bi bi-plus-circle me-1"></i>{{ t }}
+                  </button>
+                }
+              </div>
+
+              @if (draftTests().length > 0) {
+                <ul class="draft-tests">
+                  @for (t of draftTests(); track t.testName; let i = $index) {
+                    <li class="draft-test">
+                      <span class="draft-test-icon"><i class="bi bi-droplet-half"></i></span>
+                      <div>
+                        <span class="draft-test-name">{{ t.testName }}</span>
+                        @if (t.notes) { <span class="draft-test-notes">{{ t.notes }}</span> }
+                      </div>
+                      <button type="button" class="draft-test-remove" (click)="removeTest(i)" aria-label="Remove">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <span class="empty-tests-hint">
+                  <i class="bi bi-info-circle me-1"></i>Add at least one test.
+                </span>
+              }
+            </div>
+          </div>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeCreate()" [disabled]="saving()">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Creating…
+              } @else {
+                <i class="bi bi-check2 me-1"></i> Create lab order
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+</section>

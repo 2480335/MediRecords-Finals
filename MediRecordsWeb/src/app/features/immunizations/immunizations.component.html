@@ -1,0 +1,314 @@
+<section class="immunizations-page">
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-shield-plus"></i>
+        <span class="header-pulse"></span>
+      </div>
+      <div>
+        <span class="eyebrow">Patient management</span>
+        <h1 class="page-title">Immunizations</h1>
+        <p class="page-sub">
+          Track vaccinations administered or pending for patients.
+        </p>
+      </div>
+    </div>
+    @if (canCreate()) {
+      <button type="button" class="btn-primary" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i> Record immunization
+      </button>
+    }
+  </header>
+
+  <!-- ── Stats ──────────────────────────────────────────── -->
+  <div class="stats-grid">
+    <article class="stat-card stat-card--primary">
+      <div class="stat-icon"><i class="bi bi-collection"></i></div>
+      <div>
+        <span class="stat-label">Visible</span>
+        <span class="stat-value">{{ stats().total }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--success">
+      <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
+      <div>
+        <span class="stat-label">Administered</span>
+        <span class="stat-value">{{ stats().administered }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--warn">
+      <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+      <div>
+        <span class="stat-label">Pending</span>
+        <span class="stat-value">{{ stats().pending }}</span>
+      </div>
+    </article>
+  </div>
+
+  <!-- ── Filters / search ───────────────────────────────── -->
+  <header class="toolbar">
+    <form class="filter-form" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+      <div class="filter">
+        <label>Patient</label>
+        <select class="text-input" formControlName="patientId">
+          <option value="">Any patient</option>
+          @for (p of patients(); track p.patientId) {
+            <option [value]="p.patientId">{{ p.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter">
+        <label>Patient name</label>
+        <input class="text-input" formControlName="patientName" placeholder="optional" />
+      </div>
+      <div class="filter">
+        <label>Vaccine</label>
+        <input class="text-input" formControlName="vaccine" placeholder="e.g. Influenza" />
+      </div>
+      <div class="filter-buttons">
+        <button type="submit" class="btn-primary">
+          <i class="bi bi-funnel me-1"></i> Apply
+        </button>
+        <button type="button" class="btn-secondary" (click)="resetFilters()">Reset</button>
+      </div>
+    </form>
+
+    <div class="search">
+      <i class="bi bi-search"></i>
+      <input
+        type="search"
+        placeholder="Search by patient, vaccine or dose…"
+        [value]="searchTerm()"
+        (input)="setSearch($any($event.target).value)" />
+    </div>
+
+    <div class="status-tabs">
+      <button class="tab" [class.active]="statusFilter() === 'all'" (click)="setStatus('all')">All</button>
+      <button class="tab" [class.active]="statusFilter() === 'administered'" (click)="setStatus('administered')">
+        <span class="tab-dot tab-dot--ok"></span> Administered
+      </button>
+      <button class="tab" [class.active]="statusFilter() === 'pending'" (click)="setStatus('pending')">
+        <span class="tab-dot tab-dot--warn"></span> Pending
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Cards grid ─────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="grid">
+      @for (i of [1,2,3,4,5,6]; track i) {
+        <div class="imm-card imm-card--skeleton">
+          <div class="sk sk-icon"></div>
+          <div class="sk sk-line sk-line--lg"></div>
+          <div class="sk sk-line sk-line--sm"></div>
+        </div>
+      }
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="empty-card">
+      <div class="empty-icon"><i class="bi bi-shield-slash"></i></div>
+      <h3>No immunizations to show</h3>
+      <p>Adjust filters{{ canCreate() ? ', or record one for a patient.' : '.' }}</p>
+      @if (canCreate()) {
+        <button type="button" class="btn-primary" (click)="openCreate()">
+          <i class="bi bi-plus-lg me-1"></i> Record immunization
+        </button>
+      }
+    </div>
+  } @else {
+    <ul class="grid">
+      @for (r of filtered(); track r.immunizationId) {
+        <li
+          class="imm-card"
+          [attr.data-tone]="r.status ? 'ok' : 'warn'"
+          (click)="open(r)">
+          <div class="imm-icon">
+            <i class="bi" [ngClass]="vaccineIcon(r.vaccine)"></i>
+          </div>
+
+          <div class="imm-body">
+            <header class="imm-head">
+              <div>
+                <span class="imm-vaccine">{{ r.vaccine }}</span>
+                <span class="imm-meta">Dose: {{ r.dose }}</span>
+              </div>
+              <span class="status-chip" [attr.data-tone]="r.status ? 'success' : 'warn'">
+                <span class="dot"></span>
+                {{ r.status ? 'Administered' : 'Pending' }}
+              </span>
+            </header>
+
+            <div class="imm-patient">
+              <span class="avatar">{{ initials(r.patientName) }}</span>
+              <div>
+                <span class="patient-name">{{ r.patientName }}</span>
+                <span class="patient-id">Patient #{{ r.patientId }}</span>
+              </div>
+            </div>
+
+            <footer class="imm-foot">
+              <span class="given">
+                <i class="bi bi-calendar3 me-1"></i>
+                {{ r.givenDate | date:'mediumDate' }}
+              </span>
+              <span class="open-link">View <i class="bi bi-arrow-right ms-1"></i></span>
+            </footer>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+
+
+  <!-- ── Detail drawer ──────────────────────────────────── -->
+  @if (selected(); as r) {
+    <div class="modal-backdrop-custom" (click)="close()"></div>
+    <aside class="detail-drawer">
+      <header class="detail-head">
+        <div class="detail-head-row">
+          <span class="imm-icon imm-icon--lg" [attr.data-tone]="r.status ? 'ok' : 'warn'">
+            <i class="bi" [ngClass]="vaccineIcon(r.vaccine)"></i>
+          </span>
+          <div>
+            <span class="eyebrow">Immunization #{{ r.immunizationId }}</span>
+            <h2>{{ r.vaccine }}</h2>
+            <span class="muted">{{ r.patientName }} · Patient #{{ r.patientId }}</span>
+          </div>
+          <button class="icon-btn" (click)="close()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <span class="status-chip status-chip--lg" [attr.data-tone]="r.status ? 'success' : 'warn'">
+          <span class="dot"></span>
+          {{ r.status ? 'Administered' : 'Pending' }}
+        </span>
+      </header>
+
+      <div class="detail-body">
+        @if (detailLoading()) {
+          <div class="muted-row">
+            <span class="spinner-border spinner-border-sm me-2"></span>Loading…
+          </div>
+        }
+
+        <div class="meta-grid">
+          <div class="meta-item">
+            <span class="meta-label">Dose</span>
+            <span class="meta-value">{{ r.dose }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Given on</span>
+            <span class="meta-value">{{ r.givenDate | date:'mediumDate' }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Patient</span>
+            <span class="meta-value">#{{ r.patientId }}</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  }
+
+
+  <!-- ── Create modal ───────────────────────────────────── -->
+  @if (showCreate()) {
+    <div class="modal-backdrop-custom" (click)="closeCreate()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Immunizations</span>
+            <h2>Record an immunization</h2>
+            <p>Document a vaccine for a patient and mark it as administered or pending.</p>
+          </div>
+          <button class="icon-btn" (click)="closeCreate()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </header>
+
+        <form class="modal-form" [formGroup]="createForm" (ngSubmit)="submitCreate()" novalidate>
+          <div class="grid-2">
+            <div class="field">
+              <label>Patient *</label>
+              <select class="text-input" formControlName="patientId">
+                <option [ngValue]="0">-- Select patient --</option>
+                @for (p of patients(); track p.patientId) {
+                  <option [ngValue]="p.patientId">{{ p.name }}</option>
+                }
+              </select>
+              @if (createForm.controls.patientId.touched && createForm.controls.patientId.errors) {
+                <small class="error">Patient selection is required.</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Given date *</label>
+              <input class="text-input" type="date" formControlName="givenDate" />
+              @if (createForm.controls.givenDate.touched && createForm.controls.givenDate.errors) {
+                <small class="error">Date is required.</small>
+              }
+            </div>
+
+            <div class="field grid-2-span">
+              <label>Vaccine *</label>
+              <input class="text-input" formControlName="vaccine" placeholder="e.g. Influenza, COVID-19, Tdap" />
+              <div class="vaccine-suggestions">
+                @for (v of commonVaccines; track v) {
+                  <button
+                    type="button"
+                    class="vaccine-pill"
+                    [class.selected]="createForm.controls.vaccine.value === v"
+                    (click)="pickVaccine(v)">
+                    <i class="bi bi-shield-plus me-1"></i>{{ v }}
+                  </button>
+                }
+              </div>
+              @if (createForm.controls.vaccine.touched && createForm.controls.vaccine.errors) {
+                <small class="error">Vaccine is required.</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Dose *</label>
+              <input class="text-input" formControlName="dose" placeholder="e.g. 0.5 mL, Booster, Dose 1 of 2" />
+              @if (createForm.controls.dose.touched && createForm.controls.dose.errors) {
+                <small class="error">Dose is required.</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Status *</label>
+              <div class="toggle">
+                <label class="toggle-option" [class.selected]="createForm.controls.status.value">
+                  <input type="radio" [value]="true" formControlName="status" />
+                  <i class="bi bi-check2-circle me-1"></i> Administered
+                </label>
+                <label class="toggle-option" [class.selected]="!createForm.controls.status.value">
+                  <input type="radio" [value]="false" formControlName="status" />
+                  <i class="bi bi-hourglass-split me-1"></i> Pending
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeCreate()" [disabled]="saving()">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Saving…
+              } @else {
+                <i class="bi bi-check2 me-1"></i> Record
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+</section>

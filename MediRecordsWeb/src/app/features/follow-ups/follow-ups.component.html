@@ -1,0 +1,292 @@
+<section class="followups-page">
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-calendar2-event"></i>
+        <span class="header-pulse"></span>
+      </div>
+      <div>
+        <span class="eyebrow">Follow-ups</span>
+        <h1 class="page-title">Patient follow-ups</h1>
+        <p class="page-sub">
+          Schedule reminders for return visits and review what's coming up.
+        </p>
+      </div>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()">
+      <i class="bi bi-plus-lg me-1"></i> Schedule follow-up
+    </button>
+  </header>
+
+  <!-- ── Stats ──────────────────────────────────────────── -->
+  <div class="stats-grid">
+    <article class="stat-card stat-card--primary">
+      <div class="stat-icon"><i class="bi bi-collection"></i></div>
+      <div>
+        <span class="stat-label">Visible</span>
+        <span class="stat-value">{{ stats().total }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--info">
+      <div class="stat-icon"><i class="bi bi-arrow-up-right-circle"></i></div>
+      <div>
+        <span class="stat-label">Upcoming</span>
+        <span class="stat-value">{{ stats().upcoming }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--muted">
+      <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+      <div>
+        <span class="stat-label">Past</span>
+        <span class="stat-value">{{ stats().past }}</span>
+      </div>
+    </article>
+  </div>
+
+  <!-- ── Filter bar ─────────────────────────────────────── -->
+  <header class="toolbar">
+    <form class="filter-form" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+      <div class="filter">
+        <label>Patient</label>
+        <select class="text-input" formControlName="patientId">
+          <option value="">Any patient</option>
+          @for (p of patients(); track p.patientId) {
+            <option [value]="p.patientId">{{ p.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter">
+        <label>Encounter</label>
+        <select class="text-input" formControlName="encounterId">
+          <option value="">Any encounter</option>
+          @for (e of encounters(); track e.encounterId) {
+            <option [value]="e.encounterId">{{ e.encounterId }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-buttons">
+        <button type="submit" class="btn-primary">
+          <i class="bi bi-funnel me-1"></i> Apply
+        </button>
+        <button type="button" class="btn-secondary" (click)="resetFilters()">Reset</button>
+      </div>
+    </form>
+
+    <div class="search">
+      <i class="bi bi-search"></i>
+      <input
+        type="search"
+        placeholder="Search by patient, ID or notes…"
+        [value]="searchTerm()"
+        (input)="setSearch($any($event.target).value)" />
+    </div>
+
+    <div class="window-tabs">
+      <button class="tab" [class.active]="windowFilter() === 'all'" (click)="setWindow('all')">All</button>
+      <button class="tab" [class.active]="windowFilter() === 'upcoming'" (click)="setWindow('upcoming')">
+        <span class="dot dot--upcoming"></span> Upcoming
+      </button>
+      <button class="tab" [class.active]="windowFilter() === 'past'" (click)="setWindow('past')">
+        <span class="dot dot--past"></span> Past
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Timeline ───────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="grid">
+      @for (i of [1,2,3,4]; track i) {
+        <div class="followup-card followup-card--skeleton">
+          <div class="sk sk-icon"></div>
+          <div class="sk sk-line sk-line--lg"></div>
+          <div class="sk sk-line sk-line--sm"></div>
+        </div>
+      }
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="empty-card">
+      <div class="empty-icon"><i class="bi bi-calendar2-x"></i></div>
+      <h3>No follow-ups to show</h3>
+      <p>Adjust filters or schedule a new follow-up.</p>
+      <button class="btn-primary" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i> Schedule follow-up
+      </button>
+    </div>
+  } @else {
+    <ul class="grid">
+      @for (f of filtered(); track f.followupId) {
+        <li
+          class="followup-card"
+          [attr.data-tone]="isUpcoming(f.recommendedDate) ? 'upcoming' : 'past'"
+          (click)="open(f)">
+          <div class="followup-when">
+            <span class="when-day">{{ f.recommendedDate | date:'MMM d' }}</span>
+            <span class="when-year">{{ f.recommendedDate | date:'y' }}</span>
+            @if (isUpcoming(f.recommendedDate)) {
+              <span class="when-pill when-pill--upcoming">in {{ daysUntil(f.recommendedDate) }}d</span>
+            } @else {
+              <span class="when-pill when-pill--past">{{ -daysUntil(f.recommendedDate) }}d ago</span>
+            }
+          </div>
+
+          <div class="followup-body">
+            <header class="followup-head">
+              <span class="patient-avatar">{{ initials(f.patientName) }}</span>
+              <div>
+                <span class="patient-name">{{ f.patientName }}</span>
+                <span class="patient-meta">
+                  Patient #{{ f.patientId }} · Encounter #{{ f.encounterId }}
+                </span>
+              </div>
+            </header>
+            <p class="followup-notes">{{ f.notes }}</p>
+            <footer class="followup-foot">
+              <span class="created">
+                <i class="bi bi-pen me-1"></i>
+                Created {{ f.createdDate | date:'mediumDate' }}
+              </span>
+              <span class="open-link">View <i class="bi bi-arrow-right ms-1"></i></span>
+            </footer>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+
+
+  <!-- ── Detail drawer ──────────────────────────────────── -->
+  @if (selected(); as f) {
+    <div class="modal-backdrop-custom" (click)="close()"></div>
+    <aside class="detail-drawer">
+      <header class="detail-head">
+        <div class="detail-head-row">
+          <span class="patient-avatar patient-avatar--lg">{{ initials(f.patientName) }}</span>
+          <div>
+            <span class="eyebrow">Follow-up #{{ f.followupId }}</span>
+            <h2>{{ f.patientName }}</h2>
+            <span class="muted">
+              Patient #{{ f.patientId }} · Encounter #{{ f.encounterId }}
+            </span>
+          </div>
+          <button class="icon-btn" (click)="close()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="when-banner" [attr.data-tone]="isUpcoming(f.recommendedDate) ? 'upcoming' : 'past'">
+          <i class="bi" [ngClass]="isUpcoming(f.recommendedDate) ? 'bi-calendar2-event' : 'bi-clock-history'"></i>
+          <div>
+            <strong>{{ f.recommendedDate | date:'EEEE, MMM d, y' }}</strong>
+            <small>
+              @if (isUpcoming(f.recommendedDate)) {
+                in {{ daysUntil(f.recommendedDate) }} days
+              } @else {
+                {{ -daysUntil(f.recommendedDate) }} days ago
+              }
+            </small>
+          </div>
+        </div>
+      </header>
+
+      <div class="detail-body">
+        @if (detailLoading()) {
+          <div class="muted-row">
+            <span class="spinner-border spinner-border-sm me-2"></span>Loading…
+          </div>
+        }
+
+        <section class="detail-section">
+          <h3><i class="bi bi-journal-text me-1"></i> Notes</h3>
+          <p class="notes-block">{{ f.notes }}</p>
+        </section>
+
+        <section class="detail-section">
+          <h3><i class="bi bi-pen me-1"></i> Created</h3>
+          <p class="muted">{{ f.createdDate | date:'medium' }}</p>
+        </section>
+      </div>
+    </aside>
+  }
+
+
+  <!-- ── Create modal ───────────────────────────────────── -->
+  @if (showCreate()) {
+    <div class="modal-backdrop-custom" (click)="closeCreate()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Follow-ups</span>
+            <h2>Schedule a follow-up</h2>
+            <p>Recommend a return visit for an open encounter.</p>
+          </div>
+          <button class="icon-btn" (click)="closeCreate()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </header>
+
+        <form class="modal-form" [formGroup]="createForm" (ngSubmit)="submitCreate()" novalidate>
+          <div class="grid-2">
+            <div class="field">
+              @if (lockedEncounter(); as le) {
+                <label>Encounter</label>
+                <div class="locked-encounter">
+                  <i class="bi bi-lock-fill me-1"></i>
+                  <strong>Encounter #{{ le.id }}</strong>
+                  @if (le.patientName) { <span class="muted"> · {{ le.patientName }}</span> }
+                </div>
+              } @else {
+                <label>Encounter *</label>
+                <select class="text-input" formControlName="encounterId">
+                  <option [ngValue]="0">-- Select encounter --</option>
+                  @for (e of encounters(); track e.encounterId) {
+                    <option [ngValue]="e.encounterId">{{ e.encounterId }}</option>
+                  }
+                </select>
+                @if (createForm.controls.encounterId.touched && createForm.controls.encounterId.errors) {
+                  <small class="error">Encounter selection is required.</small>
+                }
+              }
+            </div>
+
+            <div class="field">
+              <label>Recommended date *</label>
+              <input class="text-input" type="date" formControlName="recommendedDate" />
+              @if (createForm.controls.recommendedDate.touched && createForm.controls.recommendedDate.errors) {
+                <small class="error">Date is required.</small>
+              }
+            </div>
+
+            <div class="field grid-2-span">
+              <label>Notes *</label>
+              <textarea
+                class="text-input"
+                rows="4"
+                formControlName="notes"
+                placeholder="Reason, what to monitor, prep instructions…"></textarea>
+              @if (createForm.controls.notes.touched && createForm.controls.notes.errors) {
+                <small class="error">Notes are required.</small>
+              }
+            </div>
+          </div>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeCreate()" [disabled]="saving()">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Scheduling…
+              } @else {
+                <i class="bi bi-check2 me-1"></i> Schedule follow-up
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+</section>

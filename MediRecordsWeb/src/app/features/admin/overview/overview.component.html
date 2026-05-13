@@ -1,0 +1,142 @@
+<section class="overview">
+
+  @if (loading()) {
+    <div class="loading-row">
+      <span class="spinner-border spinner-border-sm me-2"></span>
+      Loading dashboard…
+    </div>
+  } @else {
+
+    <div class="kpi-grid">
+      <article class="kpi-card kpi-primary">
+        <div class="kpi-icon"><i class="bi bi-people"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-label">Total users</span>
+          <span class="kpi-value">{{ totalUsers() }}</span>
+          <span class="kpi-meta">
+            <span class="kpi-pill kpi-pill--good">{{ activeUsers() }} active</span>
+            <span class="kpi-pill kpi-pill--muted">{{ inactiveUsers() }} inactive</span>
+          </span>
+        </div>
+      </article>
+
+      <article class="kpi-card kpi-violet">
+        <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-label">Procedure codes</span>
+          <span class="kpi-value">{{ procedureCodes().length }}</span>
+          <span class="kpi-meta">
+            <a routerLink="/admin/procedure-codes" class="kpi-link">
+              Manage catalog <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+          </span>
+        </div>
+      </article>
+
+      <article class="kpi-card kpi-warn">
+        <div class="kpi-icon"><i class="bi bi-cash-stack"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-label">Unbilled encounters</span>
+          <span class="kpi-value">{{ unbilledTotal() }}</span>
+          <span class="kpi-meta">
+            <a routerLink="/admin/billing" class="kpi-link">
+              Open billing <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+          </span>
+        </div>
+      </article>
+
+      <article class="kpi-card kpi-success">
+        <div class="kpi-icon"><i class="bi bi-currency-rupee"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-label">Unbilled revenue</span>
+          <span class="kpi-value">{{ unbilledRevenue() | currency:'INR':'symbol':'1.2-2' }}</span>
+          <span class="kpi-meta">Across the latest {{ unbilled().length }} encounters</span>
+        </div>
+      </article>
+    </div>
+
+    <div class="overview-grid">
+
+      <div class="card-panel">
+        <header class="panel-head">
+          <div>
+            <h2 class="panel-title">Team breakdown</h2>
+            <p class="panel-sub">Distribution of users across roles</p>
+          </div>
+          <a routerLink="/admin/users" class="btn-ghost">
+            <i class="bi bi-people me-1"></i> Manage users
+          </a>
+        </header>
+
+        <div class="role-list">
+          @for (role of roleBreakdown(); track role.name) {
+            <button
+              type="button"
+              class="role-row role-row--clickable"
+              (click)="signInAs(role.name)"
+              [title]="'Sign in as ' + role.name">
+              <div class="role-info">
+                <span class="role-dot" [attr.data-role]="role.name"></span>
+                <span class="role-name">{{ role.name }}</span>
+              </div>
+              <div class="role-meter">
+                <div class="role-bar">
+                  <div
+                    class="role-bar-fill"
+                    [attr.data-role]="role.name"
+                    [style.width.%]="(role.count / totalUsers()) * 100"></div>
+                </div>
+                <span class="role-count">{{ role.count }}</span>
+              </div>
+            </button>
+          } @empty {
+            <p class="text-muted small mb-0">No users found.</p>
+          }
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <header class="panel-head">
+          <div>
+            <h2 class="panel-title">Recent unbilled encounters</h2>
+            <p class="panel-sub">Top {{ recentEncounters().length }} encounters awaiting billing</p>
+          </div>
+          <a routerLink="/admin/billing" class="btn-ghost">
+            View all <i class="bi bi-arrow-right ms-1"></i>
+          </a>
+        </header>
+
+        @if (recentEncounters().length === 0) {
+          <div class="empty-state">
+            <i class="bi bi-check2-circle"></i>
+            <span>All caught up — no unbilled encounters.</span>
+          </div>
+        } @else {
+          <ul class="encounter-list">
+            @for (e of recentEncounters(); track e.encounterId) {
+              <li class="encounter-item">
+                <div class="encounter-avatar">
+                  {{ e.patientName.charAt(0).toUpperCase() }}
+                </div>
+                <div class="encounter-meta">
+                  <span class="encounter-name">{{ e.patientName }}</span>
+                  <span class="encounter-sub">
+                    {{ e.visitType }} · {{ e.providerName }} · {{ e.date | date:'mediumDate' }}
+                  </span>
+                </div>
+                <div class="encounter-amount">
+                  {{ e.totalChargeAmount | currency:'INR':'symbol':'1.2-2' }}
+                  <span class="encounter-charges">{{ e.unbilledChargeCount }} charges</span>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+    </div>
+
+  }
+
+</section>

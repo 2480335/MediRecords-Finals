@@ -1,0 +1,236 @@
+<section class="vitals-page">
+
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-activity"></i>
+        <span class="header-pulse"></span>
+      </div>
+      <div>
+        <span class="eyebrow">Nursing</span>
+        <h1 class="page-title">Capture vitals</h1>
+        <p class="page-sub">
+          Record blood pressure, heart rate, temperature, SpO₂, height &amp; weight.
+          BMI is calculated automatically.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-grid">
+
+    <!-- ── Capture form ──────────────────────────────────── -->
+    <section class="form-card">
+      <div class="form-banner">
+        <div class="form-banner-glow"></div>
+        <div class="form-banner-icon"><i class="bi bi-clipboard-pulse"></i></div>
+        <div>
+          <h2>New vitals snapshot</h2>
+          <p>All fields except encounter ID are optional — capture what you have.</p>
+        </div>
+      </div>
+
+      <form class="form-body" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        <div class="field">
+          @if (lockedEncounter(); as le) {
+            <label>Encounter</label>
+            <div class="locked-encounter">
+              <i class="bi bi-lock-fill me-1"></i>
+              <strong>Encounter #{{ le.id }}</strong>
+              @if (le.patientName) { <span class="muted"> · {{ le.patientName }}</span> }
+            </div>
+          } @else {
+            <label>Encounter *</label>
+            <div class="prefix-input">
+              <span class="prefix">#</span>
+              <select class="text-input" formControlName="encounterId">
+                <option [ngValue]="0">-- Select encounter --</option>
+                @for (e of encounters(); track e.encounterId) {
+                  <option [ngValue]="e.encounterId">{{ e.encounterId }}</option>
+                }
+              </select>
+            </div>
+            @if (form.controls.encounterId.touched && form.controls.encounterId.errors) {
+              <small class="error">Encounter selection is required.</small>
+            }
+          }
+        </div>
+
+        <h4 class="form-section-title">Vital signs</h4>
+        <div class="vitals-grid">
+
+          <div class="vital-card vital-card--red">
+            <div class="vital-icon"><i class="bi bi-heart-pulse"></i></div>
+            <div class="vital-fields">
+              <label>Blood pressure</label>
+              <input class="text-input" formControlName="bp" placeholder="e.g. 120/80" />
+              <span class="vital-unit">mmHg</span>
+            </div>
+          </div>
+
+          <div class="vital-card vital-card--pink">
+            <div class="vital-icon"><i class="bi bi-heart"></i></div>
+            <div class="vital-fields">
+              <label>Heart rate</label>
+              <input class="text-input" formControlName="hr" placeholder="e.g. 72" />
+              <span class="vital-unit">bpm</span>
+            </div>
+          </div>
+
+          <div class="vital-card vital-card--amber">
+            <div class="vital-icon"><i class="bi bi-thermometer-half"></i></div>
+            <div class="vital-fields">
+              <label>Temperature</label>
+              <input class="text-input" formControlName="temp" placeholder="e.g. 98.6" />
+              <span class="vital-unit">°F</span>
+            </div>
+          </div>
+
+          <div class="vital-card vital-card--cyan">
+            <div class="vital-icon"><i class="bi bi-wind"></i></div>
+            <div class="vital-fields">
+              <label>SpO₂</label>
+              <input class="text-input" formControlName="spO2" placeholder="e.g. 98" />
+              <span class="vital-unit">%</span>
+            </div>
+          </div>
+
+          <div class="vital-card vital-card--violet">
+            <div class="vital-icon"><i class="bi bi-rulers"></i></div>
+            <div class="vital-fields">
+              <label>Height</label>
+              <input class="text-input" type="number" min="0" step="0.1" formControlName="height" placeholder="e.g. 175" />
+              <span class="vital-unit">cm</span>
+            </div>
+          </div>
+
+          <div class="vital-card vital-card--success">
+            <div class="vital-icon"><i class="bi bi-speedometer2"></i></div>
+            <div class="vital-fields">
+              <label>Weight</label>
+              <input class="text-input" type="number" min="0" step="0.1" formControlName="weight" placeholder="e.g. 72" />
+              <span class="vital-unit">kg</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── BMI preview ─────────────────────────────────── -->
+        @if (previewBmi() !== null) {
+          <div class="bmi-card" [attr.data-tone]="previewBmiCategory()?.tone">
+            <div class="bmi-icon"><i class="bi bi-bar-chart-line"></i></div>
+            <div class="bmi-body">
+              <span class="bmi-label">Body Mass Index</span>
+              <span class="bmi-value">{{ previewBmi() }}</span>
+              <span class="bmi-unit">kg/m²</span>
+            </div>
+            <span class="bmi-pill" [attr.data-tone]="previewBmiCategory()?.tone">
+              {{ previewBmiCategory()?.label }}
+            </span>
+          </div>
+        }
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>Saving…
+            } @else {
+              <i class="bi bi-check2 me-1"></i> Capture vitals
+            }
+          </button>
+        </div>
+      </form>
+    </section>
+
+
+    <!-- ── History side card ─────────────────────────────── -->
+    <aside class="log-card">
+      <header class="log-head">
+        <div>
+          <h3>This session</h3>
+          <p>Vitals you've captured since opening this page.</p>
+        </div>
+        @if (history().length > 0) {
+          <button class="link-btn" (click)="clearHistory()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Clear
+          </button>
+        }
+      </header>
+
+      @if (history().length === 0) {
+        <div class="log-empty">
+          <div class="log-empty-icon"><i class="bi bi-activity"></i></div>
+          <strong>No captures yet</strong>
+          <span>Captured vitals will appear here.</span>
+        </div>
+      } @else {
+        <ul class="history-list">
+          @for (h of history(); track h.vitalId) {
+            <li class="history-item">
+              <div class="history-head">
+                <span class="history-id">Capture #{{ h.vitalId }}</span>
+                <span class="history-encounter">Encounter #{{ h.encounterId }}</span>
+              </div>
+
+              <div class="history-vitals">
+                @if (h.bp) {
+                  <span class="vital-pill" data-tone="red">
+                    <i class="bi bi-heart-pulse"></i>
+                    <strong>BP</strong> {{ h.bp }}
+                  </span>
+                }
+                @if (h.hr) {
+                  <span class="vital-pill" data-tone="pink">
+                    <i class="bi bi-heart"></i>
+                    <strong>HR</strong> {{ h.hr }}
+                  </span>
+                }
+                @if (h.temp) {
+                  <span class="vital-pill" data-tone="amber">
+                    <i class="bi bi-thermometer-half"></i>
+                    <strong>Temp</strong> {{ h.temp }}°F
+                  </span>
+                }
+                @if (h.spO2) {
+                  <span class="vital-pill" data-tone="cyan">
+                    <i class="bi bi-wind"></i>
+                    <strong>SpO₂</strong> {{ h.spO2 }}%
+                  </span>
+                }
+                @if (h.height) {
+                  <span class="vital-pill" data-tone="violet">
+                    <i class="bi bi-rulers"></i>
+                    <strong>Ht</strong> {{ h.height }} cm
+                  </span>
+                }
+                @if (h.weight) {
+                  <span class="vital-pill" data-tone="success">
+                    <i class="bi bi-speedometer2"></i>
+                    <strong>Wt</strong> {{ h.weight }} kg
+                  </span>
+                }
+                @if (h.bmi) {
+                  <span class="vital-pill bmi-history" [attr.data-tone]="classify(h.bmi)?.tone">
+                    <i class="bi bi-bar-chart-line"></i>
+                    <strong>BMI</strong> {{ h.bmi }}
+                    <span class="bmi-tag">{{ classify(h.bmi)?.label }}</span>
+                  </span>
+                }
+              </div>
+
+              <span class="history-time">
+                <i class="bi bi-clock-history me-1"></i>{{ h.capturedAt | date:'short' }}
+              </span>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="log-tip">
+        <i class="bi bi-info-circle"></i>
+        <p>BMI categories: <strong>&lt;18.5</strong> Underweight · <strong>18.5–24.9</strong> Normal · <strong>25–29.9</strong> Overweight · <strong>≥30</strong> Obese.</p>
+      </div>
+    </aside>
+
+  </div>
+</section>

@@ -1,0 +1,415 @@
+@use '../admin-shared';
+
+$ink-900: #0b1426;
+$ink-700: #334155;
+$ink-500: #64748b;
+$ink-400: #94a3b8;
+$ink-300: #cbd5e1;
+$ink-200: #e2e8f0;
+$ink-100: #f1f5f9;
+$primary: #2563eb;
+
+.billing-page {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Summary cards ────────────────────────────────────── */
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.summary-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.125rem 1.25rem;
+  background: #fff;
+  border: 1px solid $ink-200;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--from), var(--to));
+  }
+
+  &--warn { --from: #f59e0b; --to: #ef4444; }
+  &--success { --from: #14b8a6; --to: #22c55e; }
+  &--info { --from: #2563eb; --to: #06b6d4; }
+}
+
+.summary-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--from), var(--to));
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.summary-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-label {
+  font-size: 0.8125rem;
+  color: $ink-500;
+  font-weight: 500;
+}
+
+.summary-value {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: $ink-900;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-action {
+  border: none;
+  background: transparent;
+  color: $primary;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 2px;
+
+  &:hover { text-decoration: underline; }
+}
+
+/* ─── Filters ──────────────────────────────────────────── */
+.filters-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $ink-500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .text-input {
+    border: 1px solid $ink-200;
+    border-radius: 10px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.875rem;
+    background: #fff;
+    color: $ink-900;
+    outline: none;
+    min-width: 150px;
+
+    &:focus {
+      border-color: $primary;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+  }
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+/* ─── Table cells specific to billing ──────────────────── */
+.cell-meta {
+  display: block;
+  font-size: 0.75rem;
+  color: $ink-500;
+  margin-top: 2px;
+}
+
+.avatar--patient {
+  background: linear-gradient(135deg, #06b6d4, #2563eb);
+}
+
+.visit-tag {
+  display: inline-flex;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #fdf2f8;
+  color: #be185d;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.amount-cell {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: $ink-900;
+}
+
+.charge-count {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  background: $ink-100;
+  color: $ink-700;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+.btn-table {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid $ink-200;
+  border-radius: 9px;
+  background: #fff;
+  color: $ink-700;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+  }
+}
+
+/* ─── Pagination ───────────────────────────────────────── */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  border-top: 1px solid $ink-200;
+  background: #fafbff;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pagination-info {
+  font-size: 0.8125rem;
+  color: $ink-500;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.page-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 0.5rem;
+  border: 1px solid $ink-200;
+  background: #fff;
+  border-radius: 8px;
+  color: $ink-700;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+  &:hover:not(:disabled):not(.active) {
+    background: $ink-100;
+    border-color: $ink-300;
+  }
+
+  &.active {
+    background: $primary;
+    border-color: $primary;
+    color: #fff;
+  }
+
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+/* ─── Drawer ───────────────────────────────────────────── */
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  z-index: 1051;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -16px 0 40px -10px rgba(15, 23, 42, 0.25);
+  animation: slideInRight 0.2s ease both;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(20px); opacity: 0.5; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.drawer-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid $ink-100;
+
+  > div { flex: 1; min-width: 0; }
+
+  .eyebrow {
+    display: inline-block;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: $primary;
+    margin-bottom: 4px;
+  }
+
+  h2 {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: $ink-900;
+    margin: 0;
+  }
+
+  p {
+    margin: 4px 0 0;
+    font-size: 0.875rem;
+    color: $ink-500;
+  }
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+}
+
+.charge-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.charge-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid $ink-200;
+  border-radius: 12px;
+  background: #fff;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover { border-color: $ink-300; }
+
+  &.is-billed {
+    background: $ink-100;
+    opacity: 0.85;
+  }
+}
+
+.charge-check {
+  display: inline-flex;
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    accent-color: $primary;
+  }
+}
+
+.charge-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.charge-code {
+  font-weight: 700;
+  color: $ink-900;
+  font-size: 0.875rem;
+}
+
+.charge-desc {
+  font-size: 0.8125rem;
+  color: $ink-500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.charge-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.charge-amount {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: $ink-900;
+}
+
+.drawer-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid $ink-200;
+  background: #fafbff;
+}
+
+.drawer-summary {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.875rem;
+  color: $ink-500;
+
+  strong {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    color: $ink-900;
+    font-size: 1.125rem;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.drawer-actions {
+  display: flex;
+  gap: 0.5rem;
+}

@@ -1,0 +1,311 @@
+<section class="appointments-page">
+
+  <!-- ── Page header ─────────────────────────────────────── -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-calendar2-week"></i>
+        <span class="header-pulse"></span>
+      </div>
+      <div>
+        <span class="eyebrow">Scheduling</span>
+        <h1 class="page-title">Appointments</h1>
+        <p class="page-sub">Book new visits, check patients in, and update appointment statuses.</p>
+      </div>
+    </div>
+    @if (canBook()) {
+      <button type="button" class="btn-primary" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i> Book appointment
+      </button>
+    }
+  </header>
+
+  <!-- ── KPI strip ───────────────────────────────────────── -->
+  <div class="stats-grid">
+    <article class="stat-card stat-card--primary">
+      <div class="stat-icon"><i class="bi bi-calendar-event"></i></div>
+      <div class="stat-meta">
+        <span class="stat-label">All visible</span>
+        <span class="stat-value">{{ stats().total }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--info">
+      <div class="stat-icon"><i class="bi bi-bookmark-check"></i></div>
+      <div class="stat-meta">
+        <span class="stat-label">Booked</span>
+        <span class="stat-value">{{ stats().booked }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--accent">
+      <div class="stat-icon"><i class="bi bi-person-check"></i></div>
+      <div class="stat-meta">
+        <span class="stat-label">Checked-in</span>
+        <span class="stat-value">{{ stats().checkedIn }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--success">
+      <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
+      <div class="stat-meta">
+        <span class="stat-label">Completed</span>
+        <span class="stat-value">{{ stats().completed }}</span>
+      </div>
+    </article>
+  </div>
+
+  <!-- ── Filter bar ──────────────────────────────────────── -->
+  <div class="toolbar">
+    <form class="filter-form" [formGroup]="filters" (ngSubmit)="applyFilters()">
+      <div class="filter">
+        <label>Date</label>
+        <input class="text-input" type="date" formControlName="date" />
+      </div>
+      <div class="filter">
+        <label>Patient</label>
+        <select class="text-input" formControlName="patientId">
+          <option value="">Any patient</option>
+          @for (p of patients(); track p.patientId) {
+            <option [value]="p.patientId">{{ p.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter">
+        <label>Provider</label>
+        <select class="text-input" formControlName="providerId">
+          <option value="">Any provider</option>
+          @for (pr of providers(); track pr.providerId) {
+            <option [value]="pr.providerId">{{ pr.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-buttons">
+        <button type="submit" class="btn-primary">
+          <i class="bi bi-funnel me-1"></i> Apply
+        </button>
+        <button type="button" class="btn-secondary" (click)="resetFilters()">Reset</button>
+      </div>
+    </form>
+
+    <div class="status-tabs">
+      <button
+        type="button"
+        class="tab"
+        [class.active]="statusFilter() === 'all'"
+        (click)="setStatusFilter('all')">All</button>
+      @for (s of statuses; track s.value) {
+        <button
+          type="button"
+          class="tab"
+          [class.active]="statusFilter() === s.value"
+          (click)="setStatusFilter(s.value)">
+          <span class="tab-dot" [attr.data-tone]="s.tone"></span>
+          {{ s.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- ── Timeline list ───────────────────────────────────── -->
+  @if (loading()) {
+    <div class="loading-grid">
+      @for (i of [1,2,3,4,5]; track i) {
+        <div class="appt-card appt-card--skeleton">
+          <div class="sk-block sk-time"></div>
+          <div class="sk-block sk-avatar"></div>
+          <div class="sk-stack">
+            <div class="sk-block sk-line sk-line--lg"></div>
+            <div class="sk-block sk-line sk-line--sm"></div>
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="empty-card">
+      <div class="empty-icon"><i class="bi bi-calendar2-x"></i></div>
+      <h3>No appointments to show</h3>
+      <p>Try adjusting filters or book a new appointment.</p>
+      <button type="button" class="btn-primary" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i> Book appointment
+      </button>
+    </div>
+  } @else {
+    <ul class="timeline">
+      @for (a of filtered(); track a.appointmentId) {
+        <li class="appt-card" [attr.data-tone]="toneFor(statusName(a))">
+          <div class="appt-time">
+            <span class="appt-time-day">{{ a.dateTime | date:'MMM d' }}</span>
+            <span class="appt-time-hour">{{ a.dateTime | date:'h:mm a' }}</span>
+            <span class="appt-time-line"></span>
+          </div>
+
+          <div class="appt-avatar">
+            {{ initials('Patient ' + a.patientId) }}
+          </div>
+
+          <div class="appt-info">
+            <div class="appt-title">
+              <span class="appt-patient">Patient #{{ a.patientId }}</span>
+              <span class="appt-id">· Encounter via Provider #{{ a.providerId }}</span>
+            </div>
+            <div class="appt-meta">
+              @if (a.reason) {
+                <span class="appt-reason"><i class="bi bi-chat-left-text me-1"></i>{{ a.reason }}</span>
+              } @else {
+                <span class="appt-reason text-muted"><i class="bi bi-dash-lg me-1"></i>No reason provided</span>
+              }
+            </div>
+          </div>
+
+          <div class="appt-status">
+            <span class="status-chip" [attr.data-tone]="toneFor(statusName(a))">
+              <span class="status-dot"></span>
+              {{ statusName(a) }}
+            </span>
+          </div>
+
+          <div class="appt-actions">
+            <button type="button" class="btn-table" (click)="openStatus(a)">
+              <i class="bi bi-arrow-repeat me-1"></i> Update status
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+
+
+  <!-- ── Book modal ──────────────────────────────────────── -->
+  @if (showCreate()) {
+    <div class="modal-backdrop-custom" (click)="closeCreate()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Scheduling</span>
+            <h2>Book a new appointment</h2>
+            <p>Schedule a visit for a patient with one of the providers.</p>
+          </div>
+          <button class="icon-btn" (click)="closeCreate()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </header>
+
+        <form class="modal-form" [formGroup]="createForm" (ngSubmit)="submitCreate()" novalidate>
+          <div class="grid-2">
+            <div class="field">
+              <label>Patient *</label>
+              <select class="text-input" formControlName="patientId">
+                <option [ngValue]="0">-- Select patient --</option>
+                @for (p of patients(); track p.patientId) {
+                  <option [ngValue]="p.patientId">{{ p.name }}</option>
+                }
+              </select>
+              @if (createForm.controls.patientId.touched && createForm.controls.patientId.errors) {
+                <small class="error">Patient selection is required.</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Provider *</label>
+              <select class="text-input" formControlName="providerId">
+                <option [ngValue]="0">-- Select provider --</option>
+                @for (pr of providers(); track pr.providerId) {
+                  <option [ngValue]="pr.providerId">{{ pr.name }}</option>
+                }
+              </select>
+              @if (createForm.controls.providerId.touched && createForm.controls.providerId.errors) {
+                <small class="error">Provider selection is required.</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Date *</label>
+              <input class="text-input" type="date" formControlName="date" />
+              @if (createForm.controls.date.touched && createForm.controls.date.errors) {
+                <small class="error">Date is required.</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Time *</label>
+              <input class="text-input" type="time" formControlName="time" />
+              @if (createForm.controls.time.touched && createForm.controls.time.errors) {
+                <small class="error">Time is required.</small>
+              }
+            </div>
+
+            <div class="field grid-2-span">
+              <label>Reason</label>
+              <input class="text-input" formControlName="reason" placeholder="Annual physical, follow-up, etc." />
+            </div>
+          </div>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeCreate()" [disabled]="saving()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Booking…
+              } @else {
+                <i class="bi bi-calendar-plus me-1"></i> Book appointment
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- ── Status update modal ─────────────────────────────── -->
+  @if (showStatus()) {
+    <div class="modal-backdrop-custom" (click)="closeStatus()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card modal-card--sm">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Update status</span>
+            <h2>Change appointment status</h2>
+            <p>
+              Patient #{{ statusTarget()?.patientId }} ·
+              {{ statusTarget()?.dateTime | date:'mediumDate' }} at
+              {{ statusTarget()?.dateTime | date:'h:mm a' }}
+            </p>
+          </div>
+          <button class="icon-btn" (click)="closeStatus()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </header>
+
+        <div class="modal-form">
+          <span class="field-hint">Choose a new status</span>
+          <div class="status-grid">
+            @for (s of statuses; track s.value) {
+              <button
+                type="button"
+                class="status-option"
+                [attr.data-tone]="s.tone"
+                [class.selected]="chosenStatus() === s.value"
+                (click)="setChosenStatus(s.value)">
+                <span class="status-option-dot"></span>
+                <span class="status-option-label">{{ s.label }}</span>
+                @if (chosenStatus() === s.value) {
+                  <i class="bi bi-check-lg status-option-check"></i>
+                }
+              </button>
+            }
+          </div>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeStatus()" [disabled]="saving()">Cancel</button>
+            <button type="button" class="btn-primary" (click)="submitStatus()" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Updating…
+              } @else {
+                <i class="bi bi-check2-circle me-1"></i> Apply status
+              }
+            </button>
+          </footer>
+        </div>
+      </div>
+    </div>
+  }
+
+</section>

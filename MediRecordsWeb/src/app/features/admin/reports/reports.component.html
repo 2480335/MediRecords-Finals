@@ -1,0 +1,268 @@
+<section class="reports-page">
+  <header class="page-header">
+    <div class="header-icon">
+      <i class="bi" [class]="currentMeta().icon"></i>
+    </div>
+    <div>
+      <span class="eyebrow">Reports</span>
+      <h1 class="page-title">{{ currentMeta().label }}</h1>
+      <p class="page-sub">{{ currentMeta().description }}</p>
+    </div>
+  </header>
+
+  <nav class="report-tabs">
+    @for (t of tabs; track t) {
+      <button type="button" class="report-tab" [class.active]="activeTab() === t" (click)="setTab(t)">
+        <i class="bi" [class]="tabMeta[t].icon"></i>
+        <span>{{ tabMeta[t].label }}</span>
+      </button>
+    }
+  </nav>
+
+  @if (activeTab() === 'kpis') {
+    <section class="report-card">
+      <form [formGroup]="kpiForm" (ngSubmit)="runKpis()" class="report-filters">
+        <div class="field">
+          <label for="kpi-from">From</label>
+          <input id="kpi-from" type="date" class="text-input" formControlName="fromDate" [max]="todayIso" />
+        </div>
+        <div class="field">
+          <label for="kpi-to">To</label>
+          <input id="kpi-to" type="date" class="text-input" formControlName="toDate" [max]="todayIso" />
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="btn-primary" [disabled]="loading()">
+            @if (loading()) { <span class="spinner-border spinner-border-sm me-2"></span> } @else { <i class="bi bi-lightning"></i> }
+            <span>Generate</span>
+          </button>
+        </div>
+      </form>
+
+      @if (kpiResult(); as r) {
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-primary">
+            <span class="kpi-label">Visits</span>
+            <span class="kpi-value">{{ r.visitCount }}</span>
+          </div>
+          <div class="kpi-card kpi-violet">
+            <span class="kpi-label">Labs ordered</span>
+            <span class="kpi-value">{{ r.labsOrdered }}</span>
+          </div>
+          <div class="kpi-card kpi-success">
+            <span class="kpi-label">Prescriptions issued</span>
+            <span class="kpi-value">{{ r.rxIssued }}</span>
+          </div>
+        </div>
+      } @else if (!loading()) {
+        <p class="hint">Pick a date range and click Generate to load clinic KPIs.</p>
+      }
+    </section>
+  }
+
+  @if (activeTab() === 'doc') {
+    <section class="report-card">
+      <form [formGroup]="docForm" (ngSubmit)="runDoc()" class="report-filters">
+        <div class="field">
+          <label for="doc-start">Start date</label>
+          <input id="doc-start" type="date" class="text-input" formControlName="startDate" [max]="todayIso" />
+        </div>
+        <div class="field">
+          <label for="doc-end">End date</label>
+          <input id="doc-end" type="date" class="text-input" formControlName="endDate" [max]="todayIso" />
+        </div>
+        <div class="field">
+          <label for="doc-pid">Provider (optional)</label>
+          <select id="doc-pid" class="text-input" formControlName="providerId">
+            <option value="">Any provider</option>
+            @for (pr of providers(); track pr.providerId) {
+              <option [value]="pr.providerId">{{ pr.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="btn-primary" [disabled]="loading()">
+            @if (loading()) { <span class="spinner-border spinner-border-sm me-2"></span> } @else { <i class="bi bi-lightning"></i> }
+            <span>Generate</span>
+          </button>
+        </div>
+      </form>
+
+      @if (docResult(); as r) {
+        <div class="kpi-grid kpi-grid--three">
+          <div class="kpi-card kpi-primary">
+            <span class="kpi-label">Total encounters</span>
+            <span class="kpi-value">{{ r.totalEncounters }}</span>
+          </div>
+          <div class="kpi-card kpi-warn">
+            <span class="kpi-label">Incomplete</span>
+            <span class="kpi-value">{{ r.incompleteCount }}</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Range</span>
+            <span class="kpi-value-sm">{{ r.startDate | date:'mediumDate' }} → {{ r.endDate | date:'mediumDate' }}</span>
+          </div>
+        </div>
+
+        <div class="library-table-wrap">
+          <table class="data-table">
+            <tbody>
+              <tr>
+                <th>Encounter</th>
+                <th>Provider</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Issues</th>
+              </tr>
+              @for (e of r.incompleteEncounters; track trackEnc($index, e)) {
+                <tr>
+                  <td>#{{ e.encounterId }}</td>
+                  <td>{{ e.providerName }} <span class="muted">(#{{ e.providerId }})</span></td>
+                  <td>{{ e.encounterDate | date:'mediumDate' }}</td>
+                  <td>
+                    <span class="badge-soft" [attr.data-tone]="e.encounterStatus === 'Locked' ? 'success' : e.encounterStatus === 'Closed' ? 'muted' : 'primary'">
+                      {{ e.encounterStatus }}
+                    </span>
+                  </td>
+                  <td class="issues">
+                    @if (e.hasNoSoapNote) { <span class="badge-soft" data-tone="danger">No SOAP note</span> }
+                    @if (e.hasUnsignedSoapNote) { <span class="badge-soft" data-tone="warn">Unsigned</span> }
+                    @for (s of e.missingSections; track trackSection($index, s)) {
+                      <span class="badge-soft" data-tone="muted">Missing {{ s }}</span>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" class="empty-cell">No incomplete encounters in this range.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (!loading()) {
+        <p class="hint">Pick a date range (and optionally a provider) to scan documentation gaps.</p>
+      }
+    </section>
+  }
+
+  @if (activeTab() === 'noshow') {
+    <section class="report-card">
+      <form [formGroup]="noShowForm" (ngSubmit)="runNoShow()" class="report-filters">
+        <div class="field">
+          <label for="ns-start">Start date</label>
+          <input id="ns-start" type="date" class="text-input" formControlName="startDate" [max]="todayIso" />
+        </div>
+        <div class="field">
+          <label for="ns-end">End date</label>
+          <input id="ns-end" type="date" class="text-input" formControlName="endDate" [max]="todayIso" />
+        </div>
+        <div class="field">
+          <label for="ns-pid">Provider (optional)</label>
+          <select id="ns-pid" class="text-input" formControlName="providerId">
+            <option value="">Any provider</option>
+            @for (pr of providers(); track pr.providerId) {
+              <option [value]="pr.providerId">{{ pr.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="btn-primary" [disabled]="loading()">
+            @if (loading()) { <span class="spinner-border spinner-border-sm me-2"></span> } @else { <i class="bi bi-lightning"></i> }
+            <span>Generate</span>
+          </button>
+        </div>
+      </form>
+
+      @if (noShowResult(); as r) {
+        <div class="report-subhead">
+          <strong>{{ r.providerName }}</strong>
+          <span class="muted">{{ r.startDate | date:'mediumDate' }} → {{ r.endDate | date:'mediumDate' }}</span>
+        </div>
+        <div class="kpi-grid kpi-grid--four">
+          <div class="kpi-card kpi-primary">
+            <span class="kpi-label">Total appointments</span>
+            <span class="kpi-value">{{ r.totalAppointments }}</span>
+          </div>
+          <div class="kpi-card kpi-warn">
+            <span class="kpi-label">No-shows</span>
+            <span class="kpi-value">{{ r.noShows }}</span>
+            <span class="kpi-sub">{{ r.noShowPercentage }}%</span>
+          </div>
+          <div class="kpi-card kpi-violet">
+            <span class="kpi-label">Cancellations</span>
+            <span class="kpi-value">{{ r.cancellations }}</span>
+            <span class="kpi-sub">{{ r.cancellationPercentage }}%</span>
+          </div>
+          <div class="kpi-card kpi-success">
+            <span class="kpi-label">Attendance rate</span>
+            <span class="kpi-value">{{ attendanceRate() }}%</span>
+          </div>
+        </div>
+      } @else if (!loading()) {
+        <p class="hint">Pick a date range to analyze no-shows and cancellations.</p>
+      }
+    </section>
+  }
+
+  @if (activeTab() === 'util') {
+    <section class="report-card">
+      <form [formGroup]="utilForm" (ngSubmit)="runUtil()" class="report-filters">
+        <div class="field">
+          <label for="ut-pid">Provider <span class="req">*</span></label>
+          <select id="ut-pid" class="text-input" formControlName="providerId">
+            <option value="">-- Select provider --</option>
+            @for (pr of providers(); track pr.providerId) {
+              <option [value]="pr.providerId">{{ pr.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="ut-start">Start date</label>
+          <input id="ut-start" type="date" class="text-input" formControlName="startDate" [max]="todayIso" />
+        </div>
+        <div class="field">
+          <label for="ut-end">End date</label>
+          <input id="ut-end" type="date" class="text-input" formControlName="endDate" [max]="todayIso" />
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="btn-primary" [disabled]="loading()">
+            @if (loading()) { <span class="spinner-border spinner-border-sm me-2"></span> } @else { <i class="bi bi-lightning"></i> }
+            <span>Generate</span>
+          </button>
+        </div>
+      </form>
+
+      @if (utilResult(); as r) {
+        <div class="report-subhead">
+          <strong>{{ r.providerName }}</strong>
+          <span class="muted">Provider #{{ r.providerId }}</span>
+        </div>
+        <div class="kpi-grid kpi-grid--four">
+          <div class="kpi-card kpi-primary">
+            <span class="kpi-label">Scheduled</span>
+            <span class="kpi-value">{{ r.scheduledAppointments }}</span>
+          </div>
+          <div class="kpi-card kpi-success">
+            <span class="kpi-label">Completed</span>
+            <span class="kpi-value">{{ r.completedEncounters }}</span>
+          </div>
+          <div class="kpi-card kpi-violet">
+            <span class="kpi-label">Cancelled</span>
+            <span class="kpi-value">{{ r.cancelledEncounters }}</span>
+          </div>
+          <div class="kpi-card kpi-warn">
+            <span class="kpi-label">No-shows</span>
+            <span class="kpi-value">{{ r.noShowCount }}</span>
+          </div>
+        </div>
+        <div class="util-rate">
+          <span class="util-rate__label">Utilization rate</span>
+          <span class="util-rate__value">{{ r.utilizationRate }}%</span>
+          <div class="util-rate__bar">
+            <span class="util-rate__fill" [style.width.%]="r.utilizationRate"></span>
+          </div>
+        </div>
+      } @else if (!loading()) {
+        <p class="hint">Enter a Provider ID and date range to view their utilization.</p>
+      }
+    </section>
+  }
+</section>

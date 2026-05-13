@@ -1,0 +1,291 @@
+<section class="billing-page">
+
+  <!-- ── Summary cards ───────────────────────────────────── -->
+  <div class="summary-strip">
+    <div class="summary-card summary-card--warn">
+      <div class="summary-icon"><i class="bi bi-cash-stack"></i></div>
+      <div class="summary-body">
+        <span class="summary-label">Unbilled encounters</span>
+        <span class="summary-value">{{ summary().count }}</span>
+      </div>
+    </div>
+    <div class="summary-card summary-card--success">
+      <div class="summary-icon"><i class="bi bi-currency-dollar"></i></div>
+      <div class="summary-body">
+        <span class="summary-label">Visible amount</span>
+        <span class="summary-value">{{ summary().total | currency:'INR':'symbol':'1.2-2' }}</span>
+      </div>
+    </div>
+    <div class="summary-card summary-card--info">
+      <div class="summary-icon"><i class="bi bi-download"></i></div>
+      <div class="summary-body">
+        <span class="summary-label">Reports</span>
+        <button type="button" class="summary-action" (click)="openExport()">
+          <i class="bi bi-file-earmark-arrow-down me-1"></i> Export charges
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Filters bar ─────────────────────────────────────── -->
+  <header class="toolbar">
+    <form class="filters-form" [formGroup]="filters" (ngSubmit)="applyFilters()">
+      <div class="filter">
+        <label>From</label>
+        <input class="text-input" type="date" formControlName="fromDate" />
+      </div>
+      <div class="filter">
+        <label>To</label>
+        <input class="text-input" type="date" formControlName="toDate" />
+      </div>
+      <div class="filter">
+        <label>Provider</label>
+        <select class="text-input" formControlName="providerId">
+          <option value="">Any provider</option>
+          @for (pr of providers(); track pr.providerId) {
+            <option [value]="pr.providerId">{{ pr.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn-primary">
+          <i class="bi bi-funnel me-1"></i> Apply
+        </button>
+        <button type="button" class="btn-secondary" (click)="resetFilters()">Reset</button>
+      </div>
+    </form>
+  </header>
+
+  <!-- ── Encounters table ────────────────────────────────── -->
+  <div class="table-card">
+    @if (loading()) {
+      <div class="state-row">
+        <span class="spinner-border spinner-border-sm me-2"></span> Loading unbilled encounters…
+      </div>
+    } @else if (!page() || page()!.data.length === 0) {
+      <div class="state-row state-empty">
+        <i class="bi bi-check2-circle"></i>
+        <span>No unbilled encounters for the selected filters.</span>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table class="data-table">
+          <tbody>
+            <tr>
+              <th>Patient</th>
+              <th>Provider</th>
+              <th>Visit type</th>
+              <th>Date</th>
+              <th class="text-end">Amount</th>
+              <th class="text-end">Charges</th>
+              <th class="text-end">Action</th>
+            </tr>
+            @for (e of page()!.data; track e.encounterId) {
+              <tr>
+                <td>
+                  <div class="cell-user">
+                    <span class="avatar avatar--patient">{{ initials(e.patientName) }}</span>
+                    <div>
+                      <span class="cell-user-name">{{ e.patientName }}</span>
+                      <span class="cell-meta">Encounter #{{ e.encounterId }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-muted">{{ e.providerName }}</td>
+                <td>
+                  <span class="visit-tag">{{ e.visitType }}</span>
+                </td>
+                <td class="text-muted">{{ e.date | date:'mediumDate' }}</td>
+                <td class="text-end amount-cell">
+                  {{ e.totalChargeAmount | currency:'INR':'symbol':'1.2-2' }}
+                </td>
+                <td class="text-end">
+                  <span class="charge-count">{{ e.unbilledChargeCount }}</span>
+                </td>
+                <td class="text-end">
+                  <button class="btn-table" type="button" (click)="openDrawer(e)">
+                    <i class="bi bi-receipt-cutoff me-1"></i> Review
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <footer class="pagination">
+        <span class="pagination-info">
+          Page {{ page()!.page }} of {{ page()!.totalPages }} · {{ page()!.totalCount }} total
+        </span>
+        <div class="pagination-controls">
+          <button
+            class="page-btn"
+            type="button"
+            [disabled]="!page()!.hasPrevious"
+            (click)="goToPage(page()!.page - 1)">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          @for (n of pageNumbers(); track n) {
+            <button
+              class="page-btn"
+              type="button"
+              [class.active]="n === page()!.page"
+              (click)="goToPage(n)">{{ n }}</button>
+          }
+          <button
+            class="page-btn"
+            type="button"
+            [disabled]="!page()!.hasNext"
+            (click)="goToPage(page()!.page + 1)">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+      </footer>
+    }
+  </div>
+
+
+  <!-- ── Drawer: charges for an encounter ────────────────── -->
+  @if (drawerOpen()) {
+    <div class="modal-backdrop-custom" (click)="closeDrawer()"></div>
+    <aside class="drawer">
+      <header class="drawer-head">
+        <div>
+          <span class="eyebrow">Encounter #{{ drawerEncounter()?.encounterId }}</span>
+          <h2>{{ drawerEncounter()?.patientName }}</h2>
+          <p>
+            {{ drawerEncounter()?.visitType }} · {{ drawerEncounter()?.providerName }} ·
+            {{ drawerEncounter()?.date | date:'mediumDate' }}
+          </p>
+        </div>
+        <button class="icon-btn" type="button" (click)="closeDrawer()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </header>
+
+      <div class="drawer-body">
+        @if (drawerLoading()) {
+          <div class="state-row">
+            <span class="spinner-border spinner-border-sm me-2"></span> Loading charges…
+          </div>
+        } @else if (drawerCharges().length === 0) {
+          <div class="state-row state-empty">
+            <i class="bi bi-receipt"></i>
+            <span>No charges on this encounter.</span>
+          </div>
+        } @else {
+          <ul class="charge-list">
+            @for (c of drawerCharges(); track c.chargeId) {
+              <li class="charge-item" [class.is-billed]="c.status === 'Billed' || c.status === 'True' || c.status === 'true'">
+                <label class="charge-check">
+                  <input
+                    type="checkbox"
+                    [checked]="isChargeSelected(c.chargeId)"
+                    [disabled]="c.status === 'Billed' || c.status === 'True' || c.status === 'true'"
+                    (change)="toggleChargeSelection(c.chargeId)" />
+                </label>
+                <div class="charge-info">
+                  <span class="charge-code">{{ c.code }}</span>
+                  <span class="charge-desc">{{ c.description || '—' }}</span>
+                </div>
+                <div class="charge-meta">
+                  <span class="charge-amount">{{ c.amount | currency:'INR':'symbol':'1.2-2' }}</span>
+                  <span class="status-pill" [class.is-active]="c.status === 'Billed' || c.status === 'True' || c.status === 'true'">
+                    <span class="dot"></span>
+                    {{ c.status }}
+                  </span>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      <footer class="drawer-foot">
+        <div class="drawer-summary">
+          <span>{{ selectedChargeIds().size }} selected</span>
+          <strong>{{ drawerSelectedTotal() | currency:'INR':'symbol':'1.2-2' }}</strong>
+        </div>
+        <div class="drawer-actions">
+          <button type="button" class="btn-secondary" (click)="closeDrawer()" [disabled]="markingBilled()">
+            Close
+          </button>
+          <button
+            type="button"
+            class="btn-primary"
+            [disabled]="markingBilled() || selectedChargeIds().size === 0"
+            (click)="markSelectedAsBilled()">
+            @if (markingBilled()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>Processing…
+            } @else {
+              <i class="bi bi-check2-circle me-1"></i> Mark as billed
+            }
+          </button>
+        </div>
+      </footer>
+    </aside>
+  }
+
+
+  <!-- ── Export modal ────────────────────────────────────── -->
+  @if (exportOpen()) {
+    <div class="modal-backdrop-custom" (click)="closeExport()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Reports</span>
+            <h2>Export charges</h2>
+            <p>Download a snapshot of charges in the chosen format.</p>
+          </div>
+          <button class="icon-btn" (click)="closeExport()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </header>
+
+        <form class="modal-form" [formGroup]="exportForm" (ngSubmit)="submitExport()">
+          <div class="grid-2">
+            <div class="field">
+              <label>Format</label>
+              <select class="text-input" formControlName="format">
+                <option value="csv">CSV</option>
+                <option value="json">JSON</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Status</label>
+              <select class="text-input" formControlName="status">
+                <option value="All">All</option>
+                <option value="Unbilled">Unbilled</option>
+                <option value="Billed">Billed</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>From</label>
+              <input class="text-input" type="date" formControlName="fromDate" />
+            </div>
+            <div class="field">
+              <label>To</label>
+              <input class="text-input" type="date" formControlName="toDate" />
+            </div>
+          </div>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeExport()" [disabled]="exporting()">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" [disabled]="exporting()">
+              @if (exporting()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Generating…
+              } @else {
+                <i class="bi bi-download me-1"></i> Download
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+</section>

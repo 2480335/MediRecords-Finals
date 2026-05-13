@@ -1,0 +1,170 @@
+<section class="problems-page">
+
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon"><i class="bi bi-clipboard2-pulse"></i></div>
+      <div>
+        <span class="eyebrow">Clinical record</span>
+        <h1 class="page-title">Problem list</h1>
+        <p class="page-sub">
+          Document active, chronic and resolved problems on a patient's chart.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-grid">
+
+    <!-- ── Form card ─────────────────────────────────────── -->
+    <section class="form-card">
+      <div class="form-banner">
+        <div class="form-banner-glow"></div>
+        <div class="form-banner-icon"><i class="bi bi-bookmark-plus"></i></div>
+        <div>
+          <h2>New problem entry</h2>
+          <p>Required fields are marked <span class="req-mark">*</span></p>
+        </div>
+      </div>
+
+      <form class="form-body" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        <div class="grid-2">
+          <div class="field">
+            <label>Patient *</label>
+            <div class="prefix-input">
+              <span class="prefix"><i class="bi bi-person"></i></span>
+              <select class="text-input" formControlName="patientId">
+                <option [ngValue]="0">-- Select patient --</option>
+                @for (p of patients(); track p.patientId) {
+                  <option [ngValue]="p.patientId">{{ p.name }}</option>
+                }
+              </select>
+            </div>
+            @if (form.controls.patientId.touched && form.controls.patientId.errors) {
+              <small class="error">Patient selection is required.</small>
+            }
+          </div>
+
+          <div class="field">
+            <label>Start date *</label>
+            <input class="text-input" type="date" formControlName="startDate" />
+            @if (form.controls.startDate.touched && form.controls.startDate.errors) {
+              <small class="error">Start date is required.</small>
+            }
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Diagnosis *</label>
+          <input class="text-input" formControlName="diagnosis" placeholder="e.g. Hypertension, Type 2 Diabetes" />
+          <div class="suggestions">
+            @for (d of commonDiagnoses; track d) {
+              <button
+                type="button"
+                class="suggestion-pill"
+                [class.selected]="form.controls.diagnosis.value === d"
+                (click)="pickDiagnosis(d)">
+                <i class="bi bi-tag me-1"></i>{{ d }}
+              </button>
+            }
+          </div>
+          @if (form.controls.diagnosis.touched && form.controls.diagnosis.errors) {
+            <small class="error">Diagnosis is required.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label>Status *</label>
+          <div class="status-grid">
+            @for (s of statuses; track s.value) {
+              <button
+                type="button"
+                class="status-card"
+                [attr.data-tone]="s.tone"
+                [class.selected]="form.controls.status.value === s.value"
+                (click)="setStatus(s.value)">
+                <i class="bi" [ngClass]="s.icon"></i>
+                <span>{{ s.label }}</span>
+                @if (form.controls.status.value === s.value) {
+                  <i class="bi bi-check-circle-fill check"></i>
+                }
+              </button>
+            }
+          </div>
+        </div>
+
+        @if (showEndDate()) {
+          <div class="field">
+            <label>End date</label>
+            <input class="text-input" type="date" formControlName="endDate" />
+            <small class="field-hint">
+              <i class="bi bi-info-circle me-1"></i>
+              When the problem was resolved or discontinued.
+            </small>
+          </div>
+        }
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>Saving…
+            } @else {
+              <i class="bi bi-check2 me-1"></i> Record problem
+            }
+          </button>
+        </div>
+      </form>
+    </section>
+
+
+    <!-- ── Side log ──────────────────────────────────────── -->
+    <aside class="side-card">
+      <header class="side-head">
+        <div>
+          <h3>This session</h3>
+          <p>Problems you've recorded since opening this page.</p>
+        </div>
+        @if (recent().length > 0) {
+          <button class="link-btn" (click)="clearRecent()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Clear
+          </button>
+        }
+      </header>
+
+      @if (recent().length === 0) {
+        <div class="side-empty">
+          <div class="side-empty-icon"><i class="bi bi-clipboard2"></i></div>
+          <strong>No entries yet</strong>
+          <span>Recorded problems will appear here.</span>
+        </div>
+      } @else {
+        <ul class="recent-list">
+          @for (r of recent(); track r.recordedAt.getTime()) {
+            <li class="recent-item" [attr.data-tone]="toneFor(r.status)">
+              <span class="recent-icon"><i class="bi" [ngClass]="iconFor(r.status)"></i></span>
+              <div class="recent-body">
+                <div class="recent-head">
+                  <span class="recent-diagnosis">{{ r.diagnosis }}</span>
+                  <span class="status-pill" [attr.data-tone]="toneFor(r.status)">{{ r.status }}</span>
+                </div>
+                <span class="recent-meta">
+                  Patient #{{ r.patientId }} · since {{ r.startDate | date:'mediumDate' }}
+                  @if (r.endDate) { · until {{ r.endDate | date:'mediumDate' }} }
+                </span>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="side-tip">
+        <i class="bi bi-info-circle"></i>
+        <p>
+          Mark <strong>Chronic</strong> for ongoing conditions managed long-term.
+          Use <strong>Resolved</strong> when the problem clinically resolves.
+        </p>
+      </div>
+    </aside>
+
+  </div>
+</section>

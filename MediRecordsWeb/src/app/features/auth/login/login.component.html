@@ -1,0 +1,140 @@
+<div class="auth-page">
+  <div class="auth-grid">
+
+    <aside class="auth-hero d-none d-lg-flex">
+      <div class="hero-orb hero-orb--one"></div>
+      <div class="hero-orb hero-orb--two"></div>
+      <div class="hero-orb hero-orb--three"></div>
+      <div class="hero-grid"></div>
+
+      <div class="hero-content">
+        <div class="hero-brand">
+          <span class="brand-mark"><i class="bi bi-clipboard2-pulse"></i></span>
+          <span class="brand-name">MediRecords</span>
+        </div>
+
+        <div class="hero-copy">
+          <h2 class="hero-title">
+            Care, coordinated.<br />
+            Records, simplified.
+          </h2>
+          <p class="hero-subtitle">
+            A modern clinical workspace for physicians, nurses, lab teams,
+            and front-desk staff — built for speed, security, and clarity.
+          </p>
+        </div>
+
+        <ul class="hero-features list-unstyled">
+          <li>
+            <span class="feature-icon"><i class="bi bi-shield-check"></i></span>
+            <div>
+              <strong>HIPAA-aligned security</strong>
+              <small>Encrypted at rest and in transit</small>
+            </div>
+          </li>
+          <li>
+            <span class="feature-icon"><i class="bi bi-lightning-charge"></i></span>
+            <div>
+              <strong>Lightning-fast charting</strong>
+              <small>SOAP, vitals &amp; orders in seconds</small>
+            </div>
+          </li>
+          <li>
+            <span class="feature-icon"><i class="bi bi-people"></i></span>
+            <div>
+              <strong>Built for every role</strong>
+              <small>Tailored workflows by team</small>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </aside>
+
+    <section class="auth-form-pane">
+      <div class="auth-form-card">
+
+        <div class="d-lg-none mobile-brand">
+          <span class="brand-mark"><i class="bi bi-clipboard2-pulse"></i></span>
+          <span class="brand-name">MediRecords</span>
+        </div>
+
+        <div class="form-header">
+          <span class="eyebrow">Welcome back</span>
+          <h1 class="form-title">Sign in to your account</h1>
+          <p class="form-sub">Enter your credentials to access your dashboard.</p>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="alert-banner alert-banner--error" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="auth-form">
+
+          <div class="field" [class.has-error]="form.controls.email.invalid && form.controls.email.touched">
+            <label for="email" class="field-label">Email</label>
+            <div class="field-control">
+              <i class="bi bi-envelope field-icon"></i>
+              <input
+                id="email"
+                type="email"
+                class="field-input"
+                formControlName="email"
+                autocomplete="username"
+                placeholder="you@clinic.com" />
+            </div>
+            @if (form.controls.email.touched && form.controls.email.errors; as e) {
+              <small class="field-error">
+                @if (e['required']) { Email is required. }
+                @else if (e['email']) { Enter a valid email address. }
+              </small>
+            }
+          </div>
+
+          <div class="field" [class.has-error]="form.controls.password.invalid && form.controls.password.touched">
+            <div class="d-flex justify-content-between align-items-center">
+              <label for="password" class="field-label">Password</label>
+              <a routerLink="/update-password" class="field-link">Forgot password?</a>
+            </div>
+            <div class="field-control">
+              <i class="bi bi-lock field-icon"></i>
+              <input
+                id="password"
+                [type]="showPassword() ? 'text' : 'password'"
+                class="field-input has-action"
+                formControlName="password"
+                autocomplete="current-password"
+                placeholder="Enter your password" />
+              <button
+                type="button"
+                class="field-action"
+                (click)="togglePassword()"
+                [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+                <i class="bi" [class.bi-eye]="!showPassword()" [class.bi-eye-slash]="showPassword()"></i>
+              </button>
+            </div>
+            @if (form.controls.password.touched && form.controls.password.errors; as e) {
+              <small class="field-error">
+                @if (e['required']) { Password is required. }
+                @else if (e['minlength']) { Password must be at least 8 characters. }
+              </small>
+            }
+          </div>
+
+          <button type="submit" class="btn-primary-cta" [disabled]="loading()">
+            @if (loading()) {
+              <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+              <span>Signing in…</span>
+            } @else {
+              <span>Sign in</span>
+              <i class="bi bi-arrow-right ms-2"></i>
+            }
+          </button>
+        </form>
+      </div>
+    </section>
+
+  </div>
+</div>

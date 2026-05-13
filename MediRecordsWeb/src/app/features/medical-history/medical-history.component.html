@@ -1,0 +1,143 @@
+<section class="history-page">
+
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-journal-medical"></i>
+      </div>
+      <div>
+        <span class="eyebrow">Clinical record</span>
+        <h1 class="page-title">Medical history</h1>
+        <p class="page-sub">
+          Record chronic and past conditions for a patient. Captured history flows
+          into the patient chart and informs prescribing decisions.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-grid">
+
+    <!-- ── Form card ─────────────────────────────────────── -->
+    <section class="form-card">
+      <div class="form-banner">
+        <div class="form-banner-glow"></div>
+        <div class="form-banner-icon"><i class="bi bi-clipboard2-pulse"></i></div>
+        <div>
+          <h2>New history entry</h2>
+          <p>All fields marked with <span class="req-mark">*</span> are required.</p>
+        </div>
+      </div>
+
+      <form class="form-body" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        <div class="field">
+          <label>Patient <span class="req-mark">*</span></label>
+          <div class="patient-input">
+            <span class="patient-prefix"><i class="bi bi-person"></i></span>
+            <select class="text-input" formControlName="patientId">
+              <option [ngValue]="0">-- Select patient --</option>
+              @for (p of patients(); track p.patientId) {
+                <option [ngValue]="p.patientId">{{ p.name }}</option>
+              }
+            </select>
+          </div>
+          @if (form.controls.patientId.touched && form.controls.patientId.errors) {
+            <small class="error">Patient selection is required.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label>Condition <span class="req-mark">*</span></label>
+          <input
+            class="text-input"
+            formControlName="condition"
+            placeholder="e.g. Hypertension, Asthma, Type 2 Diabetes" />
+          <div class="condition-suggestions">
+            @for (c of commonConditions; track c) {
+              <button
+                type="button"
+                class="condition-pill"
+                [class.selected]="form.controls.condition.value === c"
+                (click)="pickCondition(c)">
+                <i class="bi bi-tag me-1"></i>{{ c }}
+              </button>
+            }
+          </div>
+          @if (form.controls.condition.touched && form.controls.condition.errors) {
+            <small class="error">Condition is required.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label>Notes</label>
+          <textarea
+            class="text-input"
+            rows="4"
+            formControlName="notes"
+            placeholder="Diagnosis context, severity, onset year, current control, complications…"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>Saving…
+            } @else {
+              <i class="bi bi-check2 me-1"></i> Record history
+            }
+          </button>
+        </div>
+      </form>
+    </section>
+
+
+    <!-- ── Side log ──────────────────────────────────────── -->
+    <aside class="side-card">
+      <header class="side-head">
+        <div>
+          <h3>This session</h3>
+          <p>History entries you've recorded since opening this page.</p>
+        </div>
+        @if (recent().length > 0) {
+          <button class="link-btn" (click)="clearRecent()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Clear
+          </button>
+        }
+      </header>
+
+      @if (recent().length === 0) {
+        <div class="side-empty">
+          <div class="side-empty-icon"><i class="bi bi-clipboard2"></i></div>
+          <strong>No entries yet</strong>
+          <span>Recorded conditions will appear here.</span>
+        </div>
+      } @else {
+        <ul class="recent-list">
+          @for (r of recent(); track r.recordedAt.getTime()) {
+            <li class="recent-item">
+              <span class="recent-icon"><i class="bi bi-journal-medical"></i></span>
+              <div class="recent-body">
+                <span class="recent-condition">{{ r.condition }}</span>
+                <span class="recent-meta">
+                  Patient #{{ r.patientId }} · {{ r.recordedAt | date:'h:mm a' }}
+                </span>
+                @if (r.notes) {
+                  <span class="recent-notes">{{ r.notes }}</span>
+                }
+              </div>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="side-tip">
+        <i class="bi bi-info-circle"></i>
+        <p>
+          Use clinical terms when possible (e.g. <strong>Type 2 Diabetes</strong>) so
+          downstream filters and lists stay consistent.
+        </p>
+      </div>
+    </aside>
+
+  </div>
+</section>

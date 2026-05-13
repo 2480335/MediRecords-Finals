@@ -1,0 +1,240 @@
+<section class="soap-page">
+
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-journal-medical"></i>
+        <span class="header-pulse"></span>
+      </div>
+      <div>
+        <span class="eyebrow">Charting</span>
+        <h1 class="page-title">SOAP note</h1>
+        <p class="page-sub">
+          Document an encounter using the four classic clinical sections.
+        </p>
+      </div>
+    </div>
+    <div class="progress-stack">
+      <div class="progress-track">
+        <div class="progress-fill" [style.width.%]="progress()"></div>
+      </div>
+      <span class="progress-label">{{ progress() }}% complete</span>
+    </div>
+  </header>
+
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+    <!-- ── Encounter ID ─────────────────────────────────── -->
+    <div class="encounter-card">
+      <div class="encounter-icon"><i class="bi bi-clipboard-pulse"></i></div>
+      <div class="encounter-fields">
+        @if (lockedEncounter(); as le) {
+          <label>Encounter</label>
+          <div class="locked-encounter">
+            <i class="bi bi-lock-fill me-1"></i>
+            <strong>Encounter #{{ le.id }}</strong>
+            @if (le.patientName) { <span class="muted"> · {{ le.patientName }}</span> }
+          </div>
+        } @else {
+          <label>Encounter *</label>
+          <div class="prefix-input">
+            <span class="prefix">#</span>
+            <select class="text-input" formControlName="encounterId">
+              <option [ngValue]="0">-- Select encounter --</option>
+              @for (e of encounters(); track e.encounterId) {
+                <option [ngValue]="e.encounterId">{{ e.encounterId }}</option>
+              }
+            </select>
+          </div>
+          @if (form.controls.encounterId.touched && form.controls.encounterId.errors) {
+            <small class="error">Encounter selection is required.</small>
+          }
+        }
+      </div>
+      <div class="draft-toggle">
+        <span class="draft-label">Save as</span>
+        <div class="toggle">
+          <label class="toggle-option" [class.selected]="form.controls.isDraft.value">
+            <input type="radio" [value]="true" formControlName="isDraft" />
+            <i class="bi bi-pencil me-1"></i>Draft
+          </label>
+          <label class="toggle-option" [class.selected]="!form.controls.isDraft.value">
+            <input type="radio" [value]="false" formControlName="isDraft" />
+            <i class="bi bi-check2-circle me-1"></i>Signed
+          </label>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ── Section tabs ────────────────────────────────── -->
+    <div class="section-tabs">
+      @for (s of sections; track s.key) {
+        <button
+          type="button"
+          class="section-tab"
+          [attr.data-tone]="s.tone"
+          [class.active]="activeSection() === s.key"
+          [class.is-filled]="isSectionFilled(s.key)"
+          (click)="setSection(s.key)">
+          <span class="tab-letter">{{ s.letter }}</span>
+          <span class="tab-info">
+            <span class="tab-title">{{ s.title }}</span>
+            <span class="tab-subtitle">{{ s.subtitle }}</span>
+          </span>
+          @if (isSectionFilled(s.key)) {
+            <i class="bi bi-check-circle-fill tab-check"></i>
+          }
+        </button>
+      }
+    </div>
+
+
+    <!-- ── Section content ─────────────────────────────── -->
+    <div class="section-card">
+
+      @if (activeSection() === 'S') {
+        <header class="section-head section-head--primary">
+          <div class="section-letter">S</div>
+          <div>
+            <h2>Subjective</h2>
+            <p>What the patient reports — symptoms, history, concerns in their own words.</p>
+          </div>
+        </header>
+        <div class="section-body">
+          <div class="field">
+            <label>HPI — History of Present Illness <span class="req-mark">*</span></label>
+            <textarea
+              class="text-input"
+              rows="6"
+              formControlName="hpi"
+              placeholder="Onset, location, duration, character, aggravating/alleviating factors, radiation, timing, severity (OLDCARTS)…"></textarea>
+            @if (form.controls.hpi.touched && form.controls.hpi.errors) {
+              <small class="error">HPI is required.</small>
+            }
+          </div>
+
+          <div class="field">
+            <label>ROS — Review of Systems</label>
+            <textarea
+              class="text-input"
+              rows="4"
+              formControlName="ros"
+              placeholder="Constitutional, HEENT, cardiac, respiratory, GI, GU, MSK, neuro, skin, endocrine…"></textarea>
+          </div>
+        </div>
+      }
+
+      @if (activeSection() === 'O') {
+        <header class="section-head section-head--violet">
+          <div class="section-letter">O</div>
+          <div>
+            <h2>Objective</h2>
+            <p>Physical exam findings, vitals, and observations from this encounter.</p>
+          </div>
+        </header>
+        <div class="section-body">
+          <div class="field">
+            <label>Exam findings</label>
+            <textarea
+              class="text-input"
+              rows="5"
+              formControlName="examFindings"
+              placeholder="General appearance, vitals reference, system-by-system exam findings…"></textarea>
+          </div>
+
+          <div class="field">
+            <label>Observations</label>
+            <textarea
+              class="text-input"
+              rows="3"
+              formControlName="observations"
+              placeholder="Lab values reviewed, imaging notes, point-of-care results, behavior observed…"></textarea>
+          </div>
+        </div>
+      }
+
+      @if (activeSection() === 'A') {
+        <header class="section-head section-head--amber">
+          <div class="section-letter">A</div>
+          <div>
+            <h2>Assessment</h2>
+            <p>Clinical impression, working diagnosis, differential diagnoses.</p>
+          </div>
+        </header>
+        <div class="section-body">
+          <div class="field">
+            <label>Assessment</label>
+            <textarea
+              class="text-input"
+              rows="6"
+              formControlName="assessment"
+              placeholder="1. Working diagnosis with rationale&#10;2. Differential considerations&#10;3. Severity / staging if applicable"></textarea>
+          </div>
+        </div>
+      }
+
+      @if (activeSection() === 'P') {
+        <header class="section-head section-head--success">
+          <div class="section-letter">P</div>
+          <div>
+            <h2>Plan</h2>
+            <p>Diagnostics, treatment, education, disposition, and follow-up.</p>
+          </div>
+        </header>
+        <div class="section-body">
+          <div class="field">
+            <label>Plan</label>
+            <textarea
+              class="text-input"
+              rows="6"
+              formControlName="plan"
+              placeholder="Tests ordered, medications prescribed, procedures, patient education, return precautions, follow-up timing…"></textarea>
+          </div>
+        </div>
+      }
+
+    </div>
+
+
+    <!-- ── Footer actions ──────────────────────────────── -->
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" (click)="reset()" [disabled]="saving()">
+        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+      </button>
+      <div class="actions-right">
+        <button type="button" class="btn-secondary" (click)="saveAsDraft()" [disabled]="saving()">
+          @if (saving() && form.controls.isDraft.value) {
+            <span class="spinner-border spinner-border-sm me-2"></span>Saving draft…
+          } @else {
+            <i class="bi bi-pencil me-1"></i> Save as draft
+          }
+        </button>
+        <button type="button" class="btn-primary" (click)="signAndSave()" [disabled]="saving()">
+          @if (saving() && !form.controls.isDraft.value) {
+            <span class="spinner-border spinner-border-sm me-2"></span>Signing…
+          } @else {
+            <i class="bi bi-check2-circle me-1"></i> Sign &amp; save
+          }
+        </button>
+      </div>
+    </div>
+
+
+    <!-- ── Last saved card ─────────────────────────────── -->
+    @if (lastSaved(); as s) {
+      <aside class="saved-card">
+        <div class="saved-icon"><i class="bi bi-check2-circle"></i></div>
+        <div class="saved-body">
+          <strong>SOAP note saved</strong>
+          <span>
+            Note #{{ s.noteId }} · Encounter #{{ s.encounterId }} ·
+            {{ s.status }} · {{ s.createdDate | date:'medium' }}
+          </span>
+        </div>
+      </aside>
+    }
+
+  </form>
+</section>

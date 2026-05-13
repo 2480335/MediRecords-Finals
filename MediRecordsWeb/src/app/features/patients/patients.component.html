@@ -1,0 +1,423 @@
+<section class="patients-page">
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-person-vcard"></i>
+        <span class="header-pulse"></span>
+      </div>
+      <div>
+        <span class="eyebrow">Patients</span>
+        <h1 class="page-title">Patient registry</h1>
+        <p class="page-sub">Look up an existing patient or register a new one.</p>
+      </div>
+    </div>
+    @if (canManage()) {
+      <button type="button" class="btn-primary" (click)="openCreate()">
+        <i class="bi bi-person-plus me-1"></i> Register patient
+      </button>
+    }
+  </header>
+
+  <!-- ── Toolbar (search + filters) ─────────────────────── -->
+  <header class="patients-toolbar">
+    <div class="search">
+      <i class="bi bi-search"></i>
+      <input
+        type="search"
+        placeholder="Search by name, MRN, phone or ID…"
+        [value]="searchTerm()"
+        (input)="setSearch($any($event.target).value)" />
+    </div>
+
+    <div class="toolbar-filters">
+      <div class="segmented" role="tablist" aria-label="Filter by status">
+        <button type="button"
+                [class.active]="statusFilter() === 'all'"
+                (click)="setStatusFilter('all')">All</button>
+        <button type="button"
+                [class.active]="statusFilter() === 'Active'"
+                (click)="setStatusFilter('Active')">Active</button>
+        <button type="button"
+                [class.active]="statusFilter() === 'Inactive'"
+                (click)="setStatusFilter('Inactive')">Inactive</button>
+        <button type="button"
+                [class.active]="statusFilter() === 'Deceased'"
+                (click)="setStatusFilter('Deceased')">Deceased</button>
+      </div>
+      <button type="button" class="btn-secondary btn-compact" (click)="refreshList()" [disabled]="listLoading()">
+        <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Patient list table ─────────────────────────────── -->
+  <div class="table-card">
+    @if (listLoading()) {
+      <div class="state-row">
+        <span class="spinner-border spinner-border-sm me-2"></span> Loading patients…
+      </div>
+    } @else if (filtered().length === 0) {
+      <div class="state-row state-empty">
+        <i class="bi bi-people"></i>
+        <span>No patients match your filters.</span>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table class="data-table">
+          <tbody>
+            <tr>
+              <th>Patient</th>
+              <th>MRN</th>
+              <th>Gender</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+            @for (p of filtered(); track p.patientId) {
+              <tr class="row-clickable" (click)="openPatientFromRow(p)">
+                <td>
+                  <div class="cell-user">
+                    <span class="avatar">{{ initials(p.name) }}</span>
+                    <div class="cell-user-block">
+                      <span class="cell-user-name">{{ p.name }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-muted">{{ p.mrn }}</td>
+              
+                <td class="text-muted">{{ p.gender || '—' }}</td>
+                
+                <td>
+                  <span class="status-pill" [attr.data-tone]="toneFor(p.status)">
+                    <span class="dot"></span>
+                    {{ p.status }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  <button class="icon-btn" type="button" (click)="$event.stopPropagation(); openPatientFromRow(p)" title="Open">
+                    <i class="bi bi-arrow-right"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  @if (lookupError()) {
+    <div class="error-banner">
+      <i class="bi bi-exclamation-octagon-fill"></i>
+      <div>
+        <strong>Couldn't load the patient</strong>
+        <span>{{ lookupError() }}</span>
+      </div>
+    </div>
+  }
+
+
+  <!-- ── Patient detail popup ───────────────────────────── -->
+  @if (patient(); as p) {
+    <div class="modal-backdrop-custom" (click)="reset()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <article class="patient-card modal-card modal-card--wide">
+        <header class="patient-head">
+          <div class="patient-avatar">{{ initials(p.name) }}</div>
+          <div class="patient-id">
+            <span class="patient-name">{{ p.name }}</span>
+            <span class="patient-meta">
+              <span class="mrn-pill"><i class="bi bi-hash me-1"></i>{{ p.mrn }}</span>
+              <span class="patient-id-pill">Patient #{{ p.patientId }}</span>
+              <span class="status-chip status-chip--lg" [attr.data-tone]="toneFor(p.status)">
+                <span class="dot"></span>
+                {{ p.status }}
+              </span>
+            </span>
+          </div>
+          <div class="patient-actions">
+            @if (canManage()) {
+              <button type="button" class="btn-secondary" (click)="openEdit()">
+                <i class="bi bi-pencil me-1"></i> Edit
+              </button>
+            }
+            <button type="button" class="icon-btn" (click)="reset()" aria-label="Close">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </header>
+
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Date of birth</span>
+            <span class="info-value">
+              {{ p.dob | date:'mediumDate' }}
+              @if (age(p.dob) !== null) {
+                <span class="muted"> · {{ age(p.dob) }}y</span>
+              }
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Gender</span>
+            <span class="info-value">{{ p.gender || '—' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Phone</span>
+            <span class="info-value"><i class="bi bi-telephone me-1"></i>+91 {{ p.phoneNo }}</span>
+          </div>
+          @if (hasAddress(p.addressJSON)) {
+            <div class="info-item info-item--wide">
+              <span class="info-label">Address</span>
+              <span class="info-value"><i class="bi bi-geo-alt me-1"></i>{{ formattedAddress(p.addressJSON) }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="chip-sections">
+          <section class="chip-section">
+            <h3><i class="bi bi-clipboard2-pulse me-1"></i> Active problems</h3>
+            @if (p.problems.length > 0) {
+              <ul class="chip-list chip-list--problem">
+                @for (item of p.problems; track item) { <li>{{ item }}</li> }
+              </ul>
+            } @else {
+              <p class="muted">No active problems.</p>
+            }
+          </section>
+
+          <section class="chip-section">
+            <h3><i class="bi bi-heart-pulse me-1"></i> Allergies</h3>
+            @if (p.allergies.length > 0) {
+              <ul class="chip-list chip-list--allergy">
+                @for (item of p.allergies; track item) { <li>{{ item }}</li> }
+              </ul>
+            } @else {
+              <p class="muted">No known allergies.</p>
+            }
+          </section>
+
+          <section class="chip-section">
+            <h3><i class="bi bi-journal-medical me-1"></i> Medical history</h3>
+            @if (p.medicalHistory.length > 0) {
+              <ul class="chip-list chip-list--history">
+                @for (item of p.medicalHistory; track item) { <li>{{ item }}</li> }
+              </ul>
+            } @else {
+              <p class="muted">No history recorded.</p>
+            }
+          </section>
+        </div>
+      </article>
+    </div>
+  }
+
+
+  <!-- ── Create modal ───────────────────────────────────── -->
+  @if (showCreate()) {
+    <div class="modal-backdrop-custom" (click)="closeCreate()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card modal-card--wide">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Patients</span>
+            <h2>Register a new patient</h2>
+            <p>Capture demographics and contact info to open a chart.</p>
+          </div>
+          <button class="icon-btn" (click)="closeCreate()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </header>
+
+        <form class="modal-form" [formGroup]="createForm" (ngSubmit)="submitCreate()" novalidate>
+          <h4 class="form-section-title">Demographics</h4>
+          <div class="grid-2">
+            <div class="field grid-2-span">
+              <label>Full name *</label>
+              <input class="text-input" formControlName="name" placeholder="Jane Smith" />
+              @if (createForm.controls.name.touched && createForm.controls.name.errors) {
+                <small class="error">Name is required.</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Date of birth *</label>
+              <input class="text-input" type="date" formControlName="dob" />
+              @if (createForm.controls.dob.touched && createForm.controls.dob.errors) {
+                <small class="error">Date of birth is required.</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Gender *</label>
+              <select class="text-input" formControlName="gender">
+                @for (g of genders; track g) { <option [ngValue]="g">{{ g }}</option> }
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Phone *</label>
+              <div class="phone-input">
+                <span class="phone-prefix">+91</span>
+                <input class="text-input phone-text"
+                       type="tel"
+                       inputmode="numeric"
+                       maxlength="10"
+                       formControlName="phoneNo"
+                       placeholder="9876543210" />
+              </div>
+              @if (createForm.controls.phoneNo.touched && createForm.controls.phoneNo.errors) {
+                <small class="error">Enter a valid 10-digit mobile number.</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Primary provider ID</label>
+              <input class="text-input" type="number" min="1" formControlName="primaryProviderId" placeholder="optional" />
+            </div>
+
+            <div class="field grid-2-span">
+              <label>Contact info</label>
+              <input class="text-input" formControlName="contactInfo" placeholder="Email or alternate contact" />
+            </div>
+          </div>
+
+          <h4 class="form-section-title">Address</h4>
+          <div class="grid-2">
+            <div class="field grid-2-span">
+              <label>Line 1</label>
+              <input class="text-input" formControlName="line1" placeholder="123 Main St" />
+            </div>
+            <div class="field grid-2-span">
+              <label>Line 2</label>
+              <input class="text-input" formControlName="line2" placeholder="Apt / Suite" />
+            </div>
+            <div class="field">
+              <label>City</label>
+              <input class="text-input" formControlName="city" />
+            </div>
+            <div class="field">
+              <label>State / Region</label>
+              <input class="text-input" formControlName="state" />
+            </div>
+            <div class="field">
+              <label>Postal code</label>
+              <input class="text-input" formControlName="postalCode" />
+            </div>
+            <div class="field">
+              <label>Country</label>
+              <input class="text-input" formControlName="country" />
+            </div>
+          </div>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeCreate()" [disabled]="saving()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Creating…
+              } @else {
+                <i class="bi bi-check2 me-1"></i> Register patient
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+
+  <!-- ── Edit modal ─────────────────────────────────────── -->
+  @if (showEdit()) {
+    <div class="modal-backdrop-custom" (click)="closeEdit()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card modal-card--wide">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Patient #{{ patient()?.patientId }}</span>
+            <h2>Edit patient</h2>
+            <p>Update demographics, contact details and chart status.</p>
+          </div>
+          <button class="icon-btn" (click)="closeEdit()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </header>
+
+        <form class="modal-form" [formGroup]="editForm" (ngSubmit)="submitEdit()" novalidate>
+          <h4 class="form-section-title">Status</h4>
+          <div class="status-grid">
+            @for (s of statuses; track s.value) {
+              <label class="status-option" [attr.data-tone]="s.tone"
+                     [class.selected]="editForm.controls.status.value === s.value">
+                <input type="radio" [value]="s.value" formControlName="status" />
+                <i class="bi" [ngClass]="s.icon"></i>
+                <span>{{ s.label }}</span>
+              </label>
+            }
+          </div>
+
+          <h4 class="form-section-title">Demographics</h4>
+          <div class="grid-2">
+            <div class="field grid-2-span">
+              <label>Full name *</label>
+              <input class="text-input" formControlName="name" />
+            </div>
+            <div class="field">
+              <label>Date of birth *</label>
+              <input class="text-input" type="date" formControlName="dob" />
+            </div>
+            <div class="field">
+              <label>Gender</label>
+              <select class="text-input" formControlName="gender">
+                <option value="">—</option>
+                @for (g of genders; track g) { <option [ngValue]="g">{{ g }}</option> }
+              </select>
+            </div>
+            <div class="field">
+              <label>Phone *</label>
+              <div class="phone-input">
+                <span class="phone-prefix">+91</span>
+                <input class="text-input phone-text"
+                       type="tel"
+                       inputmode="numeric"
+                       maxlength="10"
+                       formControlName="phoneNo" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Primary provider ID</label>
+              <input class="text-input" type="number" min="1" formControlName="primaryProviderId" />
+            </div>
+          </div>
+
+          <h4 class="form-section-title">Address</h4>
+          <div class="grid-2">
+            <div class="field grid-2-span">
+              <label>Line 1</label>
+              <input class="text-input" formControlName="line1" />
+            </div>
+            <div class="field grid-2-span">
+              <label>Line 2</label>
+              <input class="text-input" formControlName="line2" />
+            </div>
+            <div class="field"><label>City</label><input class="text-input" formControlName="city" /></div>
+            <div class="field"><label>State / Region</label><input class="text-input" formControlName="state" /></div>
+            <div class="field"><label>Postal code</label><input class="text-input" formControlName="postalCode" /></div>
+            <div class="field"><label>Country</label><input class="text-input" formControlName="country" /></div>
+          </div>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeEdit()" [disabled]="saving()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Saving…
+              } @else {
+                <i class="bi bi-check2 me-1"></i> Save changes
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+</section>

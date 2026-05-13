@@ -1,0 +1,155 @@
+<section class="allergies-page">
+
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-heart-pulse"></i>
+      </div>
+      <div>
+        <span class="eyebrow">Clinical record</span>
+        <h1 class="page-title">Record allergies</h1>
+        <p class="page-sub">
+          Document drug, food, or environmental allergies for a patient. Severity helps
+          downstream clinicians make safe prescribing decisions.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-grid">
+
+    <!-- ── Form card ─────────────────────────────────────── -->
+    <section class="form-card">
+      <div class="form-banner">
+        <div class="form-banner-glow"></div>
+        <div class="form-banner-icon"><i class="bi bi-shield-plus"></i></div>
+        <div>
+          <h2>New allergy entry</h2>
+          <p>All fields marked with <span class="req-mark">*</span> are required.</p>
+        </div>
+      </div>
+
+      <form class="form-body" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        <div class="field">
+          <label>Patient <span class="req-mark">*</span></label>
+          <div class="patient-input">
+            <span class="patient-prefix"><i class="bi bi-person"></i></span>
+            <select class="text-input" formControlName="patientId">
+              <option [ngValue]="0">-- Select patient --</option>
+              @for (p of patients(); track p.patientId) {
+                <option [ngValue]="p.patientId">{{ p.name }}</option>
+              }
+            </select>
+          </div>
+          @if (form.controls.patientId.touched && form.controls.patientId.errors) {
+            <small class="error">Patient selection is required.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label>Allergen <span class="req-mark">*</span></label>
+          <input
+            class="text-input"
+            formControlName="allergen"
+            placeholder="e.g. Penicillin, Peanuts, Latex" />
+          @if (form.controls.allergen.touched && form.controls.allergen.errors) {
+            <small class="error">Allergen is required.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label>Reaction</label>
+          <textarea
+            class="text-input"
+            rows="3"
+            formControlName="reaction"
+            placeholder="Describe the reaction — e.g. hives, anaphylaxis, GI distress"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Severity <span class="req-mark">*</span></label>
+          <div class="severity-grid">
+            @for (s of severities; track s.value) {
+              <button
+                type="button"
+                class="severity-option"
+                [attr.data-tone]="s.tone"
+                [class.selected]="form.controls.severity.value === s.value"
+                (click)="setSeverity(s.value)">
+                <span class="severity-dot"></span>
+                <span class="severity-label">{{ s.label }}</span>
+                @if (form.controls.severity.value === s.value) {
+                  <i class="bi bi-check-lg severity-check"></i>
+                }
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>Saving…
+            } @else {
+              <i class="bi bi-check2 me-1"></i> Record allergy
+            }
+          </button>
+        </div>
+      </form>
+    </section>
+
+
+    <!-- ── Side card: recent entries this session ─────────── -->
+    <aside class="side-card">
+      <header class="side-head">
+        <div>
+          <h3>This session</h3>
+          <p>Allergies you've recorded since opening this page.</p>
+        </div>
+        @if (recent().length > 0) {
+          <button type="button" class="link-btn" (click)="clearRecent()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Clear
+          </button>
+        }
+      </header>
+
+      @if (recent().length === 0) {
+        <div class="side-empty">
+          <div class="side-empty-icon"><i class="bi bi-clipboard2-pulse"></i></div>
+          <strong>No entries yet</strong>
+          <span>Recorded allergies will appear here.</span>
+        </div>
+      } @else {
+        <ul class="recent-list">
+          @for (r of recent(); track r.recordedAt.getTime()) {
+            <li class="recent-item" [attr.data-tone]="toneFor(r.severity)">
+              <div class="recent-icon"><i class="bi bi-asterisk"></i></div>
+              <div class="recent-body">
+                <span class="recent-allergen">{{ r.allergen }}</span>
+                <span class="recent-meta">
+                  Patient #{{ r.patientId }} · {{ r.recordedAt | date:'h:mm a' }}
+                </span>
+                @if (r.reaction) {
+                  <span class="recent-reaction">{{ r.reaction }}</span>
+                }
+              </div>
+              <span class="recent-pill" [attr.data-tone]="toneFor(r.severity)">
+                {{ r.severity }}
+              </span>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="side-tip">
+        <i class="bi bi-info-circle"></i>
+        <p>
+          Use <strong>Severe</strong> or <strong>Life-threatening</strong> for any
+          reaction requiring emergency care or hospitalization.
+        </p>
+      </div>
+    </aside>
+
+  </div>
+</section>

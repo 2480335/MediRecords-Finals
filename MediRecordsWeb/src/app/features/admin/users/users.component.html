@@ -1,0 +1,340 @@
+<section class="users-page">
+
+  <!-- ── Toolbar ─────────────────────────────────────────── -->
+  <header class="toolbar">
+    <div class="search">
+      <i class="bi bi-search"></i>
+      <input
+        type="search"
+        placeholder="Search by name, email, phone or role…"
+        [value]="searchTerm()"
+        (input)="setSearch($any($event.target).value)" />
+    </div>
+
+    <div class="toolbar-filters">
+      <div class="segmented" role="tablist" aria-label="Filter by status">
+        <button
+          type="button"
+          [class.active]="statusFilter() === 'all'"
+          (click)="setStatus('all')">All</button>
+        <button
+          type="button"
+          [class.active]="statusFilter() === 'active'"
+          (click)="setStatus('active')">Active</button>
+        <button
+          type="button"
+          [class.active]="statusFilter() === 'inactive'"
+          (click)="setStatus('inactive')">Inactive</button>
+      </div>
+
+      <select class="select" [value]="roleFilter()" (change)="setRole($any($event.target).value)">
+        <option value="all">All roles</option>
+        @for (r of roles(); track r.roleId) {
+          <option [value]="r.name">{{ r.name }}</option>
+        }
+      </select>
+
+      <button type="button" class="btn-primary" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i> New user
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Table card ──────────────────────────────────────── -->
+  <div class="table-card">
+    @if (loading()) {
+      <div class="state-row">
+        <span class="spinner-border spinner-border-sm me-2"></span> Loading users…
+      </div>
+    } @else if (filtered().length === 0) {
+      <div class="state-row state-empty">
+        <i class="bi bi-people"></i>
+        <span>No users match your filters.</span>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table class="data-table">
+          <tbody>
+            <tr> 
+              <th class="col-name">Name</th>
+              <th class="col-email">Email</th>
+              <th class="col-phone">Phone</th>
+              <th class="col-role">Role</th>
+              <th class="col-status">Status</th>
+              <th class="col-actions text-end">Actions</th>
+            </tr>
+            @for (u of filtered(); track u.userId) {
+              <tr>
+                <td class="col-name">
+                  <div class="cell-user col-name">
+                    <span class="avatar" [attr.data-role]="u.roleName">
+                      {{ initials(u.name) }}
+                    </span>
+                    
+                    <span class="cell-user-name col-name">
+                      {{ u.name }}
+                    </span>
+                  </div>
+                </td>
+                <td class="text-muted">{{ u.email }}</td>
+                <td class="text-muted">{{ u.phone ? '+91 ' + u.phone : '—' }}</td>
+                <td>
+                  <span class="role-tag" [attr.data-role]="u.roleName">{{ u.roleName }}</span>
+                </td>
+                <td>
+                  <span class="status-pill" [class.is-active]="u.status === 'Active'">
+                    <span class="dot"></span>
+                    {{ u.status }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  <button class="icon-btn" type="button" (click)="openEdit(u)" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="icon-btn icon-btn--danger" type="button" (click)="openDelete(u)" title="Deactivate">
+                    <i class="bi bi-person-dash"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+
+  <!-- ── Create modal ────────────────────────────────────── -->
+  @if (showCreate()) {
+    <div class="modal-backdrop-custom" (click)="closeCreate()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">User management</span>
+            <h2>Add a new user</h2>
+            <p>Create a teammate account and choose their role.</p>
+          </div>
+          <button class="icon-btn" (click)="closeCreate()" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+        </header>
+
+        <form class="modal-form" [formGroup]="createForm" (ngSubmit)="submitCreate()" novalidate>
+          <div class="grid-2">
+            <div class="field">
+              <label>Full name *</label>
+              <input class="text-input" formControlName="name" placeholder="Dr. Jane Smith" />
+              @if (createForm.controls.name.touched && createForm.controls.name.errors; as e) {
+                <small class="error">@if (e['required']) { Name is required. }</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Role *</label>
+              <select class="text-input" formControlName="roleId">
+                <option [ngValue]="0">Select a role</option>
+                @for (r of roles(); track r.roleId) {
+                  <option [ngValue]="r.roleId">
+                    {{ r.name }}@if (describe(r.name)) {<span> — {{ describe(r.name) }}</span>}
+                  </option>
+                }
+              </select>
+              @if (createForm.controls.roleId.touched && createForm.controls.roleId.errors) {
+                <small class="error">Role is required.</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Email *</label>
+              <input class="text-input" type="email" formControlName="email" placeholder="user@clinic.com" />
+              @if (createForm.controls.email.touched && createForm.controls.email.errors; as e) {
+                <small class="error">
+                  @if (e['required']) { Email is required. }
+                  @else if (e['email']) { Enter a valid email. }
+                </small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Phone</label>
+              <div class="phone-input">
+                <span class="phone-prefix">+91</span>
+                <input class="text-input phone-text"
+                       type="tel"
+                       inputmode="numeric"
+                       maxlength="10"
+                       formControlName="phone"
+                       placeholder="9876543210" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Password *</label>
+              <div class="input-stack">
+                <input
+                  class="text-input"
+                  [type]="showPwd() ? 'text' : 'password'"
+                  formControlName="password"
+                  placeholder="Min 8 chars, mixed case + symbol" />
+                <button type="button" class="input-action" (click)="togglePwd()" aria-label="Toggle">
+                  <i class="bi" [class.bi-eye]="!showPwd()" [class.bi-eye-slash]="showPwd()"></i>
+                </button>
+              </div>
+              @if (createForm.controls.password.touched && createForm.controls.password.errors; as e) {
+                <small class="error">
+                  @if (e['required']) { Password is required. }
+                  @else if (e['minlength']) { At least 8 characters. }
+                  @else if (e['pattern']) { Include upper, lower, number &amp; symbol. }
+                </small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Confirm password *</label>
+              <input
+                class="text-input"
+                [type]="showPwd() ? 'text' : 'password'"
+                formControlName="confirmPassword"
+                placeholder="Repeat password" />
+              @if (createForm.controls.confirmPassword.touched && createForm.errors?.['mismatch']) {
+                <small class="error">Passwords do not match.</small>
+              }
+            </div>
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" formControlName="status" />
+            <span>Activate account immediately</span>
+          </label>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeCreate()" [disabled]="saving()">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Creating…
+              } @else {
+                <i class="bi bi-check2 me-1"></i> Create user
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- ── Edit modal ──────────────────────────────────────── -->
+  @if (showEdit()) {
+    <div class="modal-backdrop-custom" (click)="closeEdit()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">User management</span>
+            <h2>Edit user</h2>
+            <p>{{ editingUser()?.email }}</p>
+          </div>
+          <button class="icon-btn" (click)="closeEdit()" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+        </header>
+
+        <form class="modal-form" [formGroup]="editForm" (ngSubmit)="submitEdit()" novalidate>
+          <div class="grid-2">
+            <div class="field">
+              <label>Full name *</label>
+              <input class="text-input" formControlName="name" />
+              @if (editForm.controls.name.touched && editForm.controls.name.invalid) {
+                <small class="error">Name is required.</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Role *</label>
+              <select class="text-input" formControlName="roleID">
+                <option [ngValue]="0">Select a role</option>
+                @for (r of roles(); track r.roleId) {
+                  <option [ngValue]="r.roleId">{{ r.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Email *</label>
+              <input class="text-input" type="email" formControlName="email" />
+              @if (editForm.controls.email.touched && editForm.controls.email.errors; as e) {
+                <small class="error">
+                  @if (e['required']) { Email is required. }
+                  @else if (e['email']) { Enter a valid email. }
+                </small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Phone *</label>
+              <div class="phone-input">
+                <span class="phone-prefix">+91</span>
+                <input class="text-input phone-text"
+                       type="tel"
+                       inputmode="numeric"
+                       maxlength="10"
+                       formControlName="phone" />
+              </div>
+              @if (editForm.controls.phone.touched && editForm.controls.phone.invalid) {
+                <small class="error">Phone is required.</small>
+              }
+            </div>
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" formControlName="status" />
+            <span>Account is active</span>
+          </label>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeEdit()" [disabled]="saving()">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Saving…
+              } @else {
+                <i class="bi bi-check2 me-1"></i> Save changes
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- ── Delete confirm ──────────────────────────────────── -->
+  @if (showDelete()) {
+    <div class="modal-backdrop-custom" (click)="closeDelete()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card modal-card--sm">
+        <header class="modal-head modal-head--danger">
+          <div class="warn-icon"><i class="bi bi-exclamation-triangle"></i></div>
+          <div>
+            <h2>Deactivate user?</h2>
+            <p>
+              <strong>{{ deleting()?.name }}</strong> will be marked inactive and lose access immediately.
+            </p>
+          </div>
+        </header>
+
+        <footer class="modal-foot">
+          <button type="button" class="btn-secondary" (click)="closeDelete()" [disabled]="saving()">
+            Cancel
+          </button>
+          <button type="button" class="btn-danger" (click)="confirmDelete()" [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>Deactivating…
+            } @else {
+              <i class="bi bi-person-dash me-1"></i> Deactivate
+            }
+          </button>
+        </footer>
+      </div>
+    </div>
+  }
+
+</section>

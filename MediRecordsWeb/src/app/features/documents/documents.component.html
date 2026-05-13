@@ -1,0 +1,330 @@
+<section class="documents-page">
+
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-cloud-arrow-up"></i>
+      </div>
+      <div>
+        <span class="eyebrow">Documents</span>
+        <h1 class="page-title">Upload patient documents</h1>
+        <p class="page-sub">
+          Attach referrals, consent forms, reports, or photos to a patient's encounter.
+          Provider-only documents stay hidden from front-desk views.
+        </p>
+      </div>
+    </div>
+  </header>
+
+
+  <div class="page-grid">
+
+    <!-- ── Upload form ──────────────────────────────────── -->
+    <section class="upload-card">
+      <div class="upload-banner">
+        <div class="upload-banner-glow"></div>
+        <div class="upload-banner-icon"><i class="bi bi-folder-plus"></i></div>
+        <div>
+          <h2>New document</h2>
+          <p>Files up to 10 MB · PDF, images, Office, ZIP</p>
+        </div>
+      </div>
+
+      <form class="upload-body" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        <div class="grid-2">
+          @if (lockedEncounter(); as le) {
+            <div class="field">
+              <label>Patient</label>
+              <div class="locked-encounter">
+                <i class="bi bi-lock-fill me-1"></i>
+                <strong>{{ le.patientName || ('Patient #' + le.patientId) }}</strong>
+              </div>
+            </div>
+            <div class="field">
+              <label>Encounter</label>
+              <div class="locked-encounter">
+                <i class="bi bi-lock-fill me-1"></i>
+                <strong>Encounter #{{ le.id }}</strong>
+              </div>
+            </div>
+          } @else {
+            <div class="field">
+              <label>Patient *</label>
+              <select class="text-input" formControlName="patientId">
+                <option [ngValue]="0">-- Select patient --</option>
+                @for (p of patients(); track p.patientId) {
+                  <option [ngValue]="p.patientId">{{ p.name }}</option>
+                }
+              </select>
+              @if (form.controls.patientId.touched && form.controls.patientId.errors) {
+                <small class="error">Patient selection is required.</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Encounter *</label>
+              <select class="text-input" formControlName="encounterId">
+                <option [ngValue]="0">-- Select encounter --</option>
+                @for (e of encounters(); track e.encounterId) {
+                  <option [ngValue]="e.encounterId">{{ e.encounterId }}</option>
+                }
+              </select>
+              @if (form.controls.encounterId.touched && form.controls.encounterId.errors) {
+                <small class="error">Encounter selection is required.</small>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="field">
+          <label>Document type *</label>
+          <div class="doc-type-grid">
+            @for (d of docTypes; track d.value) {
+              <button
+                type="button"
+                class="doc-type-card"
+                [attr.data-tone]="d.tone"
+                [class.selected]="form.controls.docType.value === d.value"
+                (click)="setDocType(d.value)">
+                <span class="doc-type-icon"><i class="bi" [ngClass]="d.icon"></i></span>
+                <span class="doc-type-label">{{ d.label }}</span>
+                @if (form.controls.docType.value === d.value) {
+                  <i class="bi bi-check-circle-fill doc-type-check"></i>
+                }
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="field">
+          <label>File *</label>
+          <div
+            class="dropzone"
+            [class.has-file]="!!file()"
+            [class.is-active]="dragActive()"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)">
+
+            @if (!file()) {
+              <div class="dropzone-empty">
+                <div class="dz-icon"><i class="bi bi-cloud-arrow-up"></i></div>
+                <strong>Drag &amp; drop your file</strong>
+                <span>or
+                  <label class="dz-link">
+                    browse
+                    <input type="file" hidden (change)="selectFile($event)" />
+                  </label>
+                </span>
+                <small>PDF · images · Office · ZIP — up to 10 MB</small>
+              </div>
+            } @else {
+              <div class="dropzone-file">
+                <div class="file-thumb">
+                  <i class="bi" [ngClass]="fileIcon(file()!.name)"></i>
+                </div>
+                <div class="file-meta">
+                  <span class="file-name">{{ file()!.name }}</span>
+                  <span class="file-size">{{ formatSize(file()!.size) }}</span>
+                </div>
+                <button type="button" class="file-remove" (click)="removeFile()" aria-label="Remove">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+            }
+          </div>
+          @if (fileError()) {
+            <small class="error">{{ fileError() }}</small>
+          }
+        </div>
+
+        <label class="visibility-toggle">
+          <input type="checkbox" formControlName="providerOnlyVisibility" />
+          <div>
+            <strong>Provider-only visibility</strong>
+            <span>Hide from front-desk and nurse roles. Only providers will see this document.</span>
+          </div>
+        </label>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>Uploading…
+            } @else {
+              <i class="bi bi-upload me-1"></i> Upload document
+            }
+          </button>
+        </div>
+      </form>
+    </section>
+
+
+    <!-- ── Recent uploads side card ─────────────────────── -->
+    <aside class="log-card">
+      <header class="log-head">
+        <div>
+          <h3>This session</h3>
+          <p>Documents you've uploaded since opening this page.</p>
+        </div>
+        @if (uploaded().length > 0) {
+          <button class="link-btn" (click)="clearLog()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Clear
+          </button>
+        }
+      </header>
+
+      @if (uploaded().length === 0) {
+        <div class="log-empty">
+          <div class="log-empty-icon"><i class="bi bi-inbox"></i></div>
+          <strong>No uploads yet</strong>
+          <span>Successful uploads will appear here.</span>
+        </div>
+      } @else {
+        <ul class="log-list">
+          @for (u of uploaded(); track u.documentId) {
+            <li class="log-item" [attr.data-tone]="toneFor(u.docType)">
+              <span class="log-icon"><i class="bi" [ngClass]="iconFor(u.docType)"></i></span>
+              <div class="log-meta">
+                <span class="log-name">{{ u.fileName }}</span>
+                <span class="log-sub">
+                  {{ u.docType }} · Patient #{{ u.patientId }} · Encounter #{{ u.encounterId }}
+                </span>
+                <span class="log-date">{{ u.uploadedDate | date:'short' }}</span>
+              </div>
+              <span class="log-pill" [attr.data-tone]="toneFor(u.docType)">{{ u.docType }}</span>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="log-tip">
+        <i class="bi bi-shield-lock"></i>
+        <p>Files are encrypted at rest. Provider-only flagging restricts non-provider visibility.</p>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ── Library: search + download ── -->
+  <section class="library-card">
+    <header class="library-head">
+      <div>
+        <span class="eyebrow">Library</span>
+        <h2 class="library-title">Search uploaded documents</h2>
+        <p class="library-sub">
+          Filter by patient, encounter or upload date. Click <strong>Download</strong> to fetch the original file.
+        </p>
+      </div>
+      <button type="button" class="btn-secondary" (click)="refreshLibrary()" [disabled]="libraryLoading()">
+        <i class="bi bi-arrow-clockwise"></i>
+        <span>Refresh</span>
+      </button>
+    </header>
+
+    <form [formGroup]="searchForm" (ngSubmit)="refreshLibrary()" class="library-filters">
+      <div class="field">
+        <label for="docs-search-patient">Patient</label>
+        <select id="docs-search-patient" class="text-input" formControlName="patientId">
+          <option value="">Any patient</option>
+          @for (p of patients(); track p.patientId) {
+            <option [value]="p.patientId">{{ p.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="docs-search-encounter">Encounter</label>
+        <select id="docs-search-encounter" class="text-input" formControlName="encounterId">
+          <option value="">Any encounter</option>
+          @for (e of encounters(); track e.encounterId) {
+            <option [value]="e.encounterId">{{ e.encounterId }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="docs-search-date">Uploaded on</label>
+        <input id="docs-search-date" type="date" class="text-input" formControlName="uploadedDate" />
+      </div>
+      <div class="library-filter-actions">
+        <button type="submit" class="btn-primary" [disabled]="libraryLoading()">
+          @if (libraryLoading()) {
+            <span class="spinner-border spinner-border-sm me-2"></span>
+          } @else {
+            <i class="bi bi-search"></i>
+          }
+          <span>Search</span>
+        </button>
+        <button type="button" class="btn-secondary" (click)="resetSearch()" [disabled]="libraryLoading()">
+          Reset
+        </button>
+      </div>
+    </form>
+
+    @if (libraryLoading()) {
+      <div class="state-row">
+        <span class="spinner-border spinner-border-sm me-2"></span>
+        Loading documents…
+      </div>
+    } @else if (library().length === 0 && librarySearched()) {
+      <div class="empty-row">
+        <i class="bi bi-inbox"></i>
+        <p>No documents match these filters.</p>
+      </div>
+    } @else {
+      <div class="library-table-wrap">
+        <table class="data-table library-table">
+          <tbody>
+            <tr>
+              <th>ID</th>
+              <th>Type</th>
+              <th>File name</th>
+              <th>Patient</th>
+              <th>Encounter</th>
+              <th>Uploaded by</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+            @for (doc of library(); track trackDoc($index, doc)) {
+              <tr>
+                <td>{{ doc.documentId }}</td>
+                <td>
+                  <span class="badge-soft" [attr.data-tone]="toneFor(doc.docType)">
+                    <i class="bi" [class]="iconFor(doc.docType)"></i>
+                    {{ doc.docType }}
+                  </span>
+                </td>
+                <td>
+                  <span class="file-cell">
+                    <i class="bi" [class]="fileIcon(doc.fileName)"></i>
+                    <span class="file-cell__name">{{ doc.fileName }}</span>
+                  </span>
+                </td>
+                <td>#{{ doc.patientId }}</td>
+                <td>#{{ doc.encounterId }}</td>
+                <td>{{ doc.uploadedBy }}</td>
+                <td>{{ doc.uploadedDate }}</td>
+                <td>
+                  <span class="badge-soft" [attr.data-tone]="doc.status === 'Active' ? 'success' : 'muted'">
+                    {{ doc.status }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  <button type="button" class="icon-btn" (click)="download(doc)"
+                          [disabled]="downloadingId() === doc.documentId"
+                          title="Download">
+                    @if (downloadingId() === doc.documentId) {
+                      <span class="spinner-border spinner-border-sm"></span>
+                    } @else {
+                      <i class="bi bi-download"></i>
+                    }
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</section>

@@ -1,0 +1,172 @@
+<section class="medications-page">
+
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-capsule"></i>
+        <span class="header-pulse"></span>
+      </div>
+      <div>
+        <span class="eyebrow">Pharmacy</span>
+        <h1 class="page-title">Medications</h1>
+        <p class="page-sub">Browse the active medication list across all patients.</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Stats ──────────────────────────────────────────── -->
+  <div class="stats-grid">
+    <article class="stat-card stat-card--primary">
+      <div class="stat-icon"><i class="bi bi-collection"></i></div>
+      <div>
+        <span class="stat-label">Visible</span>
+        <span class="stat-value">{{ stats().total }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--success">
+      <div class="stat-icon"><i class="bi bi-activity"></i></div>
+      <div>
+        <span class="stat-label">Active</span>
+        <span class="stat-value">{{ stats().active }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--muted">
+      <div class="stat-icon"><i class="bi bi-pause-circle"></i></div>
+      <div>
+        <span class="stat-label">Inactive</span>
+        <span class="stat-value">{{ stats().inactive }}</span>
+      </div>
+    </article>
+  </div>
+
+  <!-- ── Toolbar ────────────────────────────────────────── -->
+  <header class="toolbar">
+    <form class="filter-form" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+      <div class="filter">
+        <label>Patient</label>
+        <select class="text-input" formControlName="patientId">
+          <option value="">Any patient</option>
+          @for (p of patients(); track p.patientId) {
+            <option [value]="p.patientId">{{ p.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter">
+        <label>Patient name</label>
+        <input class="text-input" formControlName="patientName" placeholder="optional" />
+      </div>
+      <div class="filter">
+        <label>Drug name</label>
+        <input class="text-input" formControlName="drugName" placeholder="e.g. Metformin" />
+      </div>
+      <div class="filter">
+        <label>Route</label>
+        <input class="text-input" formControlName="route" placeholder="e.g. PO, IV" />
+      </div>
+      <div class="filter">
+        <label>Start from</label>
+        <input class="text-input" type="date" formControlName="startDate" />
+      </div>
+      <div class="filter">
+        <label>End by</label>
+        <input class="text-input" type="date" formControlName="endDate" />
+      </div>
+      <div class="filter-buttons">
+        <button type="submit" class="btn-primary">
+          <i class="bi bi-funnel me-1"></i> Apply
+        </button>
+        <button type="button" class="btn-secondary" (click)="resetFilters()">Reset</button>
+      </div>
+    </form>
+
+    <div class="search">
+      <i class="bi bi-search"></i>
+      <input
+        type="search"
+        placeholder="Search by patient, drug, dose, frequency or route…"
+        [value]="searchTerm()"
+        (input)="setSearch($any($event.target).value)" />
+    </div>
+
+    <div class="status-tabs">
+      <button class="tab" [class.active]="statusTab() === 'all'" (click)="setStatusTab('all')">All</button>
+      <button class="tab" [class.active]="statusTab() === 'Active'" (click)="setStatusTab('Active')">
+        <span class="tab-dot tab-dot--ok"></span> Active
+      </button>
+      <button class="tab" [class.active]="statusTab() === 'Inactive'" (click)="setStatusTab('Inactive')">
+        <span class="tab-dot tab-dot--mute"></span> Inactive
+      </button>
+    </div>
+  </header>
+
+  <!-- ── List ───────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="med-grid">
+      @for (i of [1,2,3,4,5,6]; track i) {
+        <div class="med-card med-card--skeleton">
+          <div class="sk sk-icon"></div>
+          <div class="sk sk-line sk-line--lg"></div>
+          <div class="sk sk-line sk-line--sm"></div>
+        </div>
+      }
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="empty-card">
+      <div class="empty-icon"><i class="bi bi-capsule-pill"></i></div>
+      <h3>No medications to show</h3>
+      <p>Try adjusting filters.</p>
+    </div>
+  } @else {
+    <ul class="med-grid">
+      @for (m of filtered(); track m.medId) {
+        <li class="med-card" [attr.data-tone]="m.status === 'Active' ? 'ok' : 'muted'">
+          <div class="med-icon">
+            <i class="bi" [ngClass]="drugIcon(m.drugName)"></i>
+          </div>
+
+          <div class="med-body">
+            <header class="med-head">
+              <div>
+                <span class="med-drug">{{ m.drugName }}</span>
+                <span class="med-meta">
+                  @if (m.dose) { {{ m.dose }} } @else { — } ·
+                  @if (m.frequency) { {{ m.frequency }} } @else { — }
+                </span>
+              </div>
+              <span class="status-chip" [attr.data-tone]="m.status === 'Active' ? 'success' : 'muted'">
+                <span class="dot"></span>
+                {{ m.status }}
+              </span>
+            </header>
+
+            <div class="patient-block">
+              <span class="avatar">{{ initials(m.patientName) }}</span>
+              <div>
+                <span class="patient-name">{{ m.patientName || 'Unknown' }}</span>
+                <span class="patient-id">Patient #{{ m.patientId }} · Med #{{ m.medId }}</span>
+              </div>
+            </div>
+
+            <div class="med-detail-row">
+              @if (m.route) {
+                <span class="detail-pill">
+                  <i class="bi" [ngClass]="routeIcon(m.route)"></i>
+                  {{ m.route }}
+                </span>
+              }
+              <span class="detail-pill">
+                <i class="bi bi-calendar-event"></i>
+                {{ m.startDate | date:'mediumDate' }}
+              </span>
+              <span class="detail-pill">
+                <i class="bi bi-calendar-x"></i>
+                {{ m.endDate | date:'mediumDate' }}
+              </span>
+            </div>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+
+</section>

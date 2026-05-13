@@ -1,0 +1,79 @@
+@use '../admin-shared';
+
+.users-page {
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* +91 prefixed phone input */
+.phone-input {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #cbd5e1;
+  border-radius: .5rem;
+  overflow: hidden;
+  background: #fff;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.phone-input:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, .18);
+}
+
+.phone-prefix {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 .75rem;
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 600;
+  font-size: .87rem;
+  border-right: 1px solid #e2e8f0;
+}
+
+.phone-text {
+  flex: 1;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: .5rem .75rem !important;
+}
+
+.phone-text:focus {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Fixed-width column layout so the body content lines up under each
+   header, instead of the default auto-sized layout where short headers
+   like "NAME" appeared offset from the wide avatar+name cell beneath. */
+.users-table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table .col-name    { width: 28%; min-width: 220px; }
+.users-table .col-email   { width: 24%; min-width: 200px; }
+.users-table .col-phone   { width: 14%; min-width: 140px; }
+.users-table .col-role    { width: 12%; min-width: 110px; }
+.users-table .col-status  { width: 12%; min-width: 110px; }
+.users-table .col-actions { width: 10%; min-width: 110px; }
+
+/* Stop long emails / phone numbers from pushing column widths around. */
+.users-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Name cell keeps avatar + name aligned even when the name is long. */
+.users-table .cell-user-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+

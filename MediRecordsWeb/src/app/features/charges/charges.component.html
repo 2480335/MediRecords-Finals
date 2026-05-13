@@ -1,0 +1,339 @@
+<section class="charges-page">
+
+  <!-- ── Header ──────────────────────────────────────────── -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-cash-coin"></i>
+        <span class="header-pulse"></span>
+      </div>
+      <div>
+        <span class="eyebrow">Billing</span>
+        <h1 class="page-title">Charges Console</h1>
+        <p class="page-sub">
+          Look up an encounter to review, assign, or update visit charges before billing.
+        </p>
+      </div>
+    </div>
+  </header>
+
+
+  <!-- ── Lookup card ─────────────────────────────────────── -->
+  <div class="lookup-card">
+    <div class="lookup-glow"></div>
+
+    <div class="lookup-icon"><i class="bi bi-search"></i></div>
+
+    <form class="lookup-form" (submit)="$event.preventDefault(); search()">
+      <div class="lookup-fields">
+        @if (lockedEncounter(); as le) {
+          <label class="lookup-label">Encounter (from chart)</label>
+          <div class="locked-encounter">
+            <i class="bi bi-lock-fill me-1"></i>
+            <strong>Encounter #{{ le.id }}</strong>
+            @if (le.patientName) { <span class="muted"> · {{ le.patientName }}</span> }
+          </div>
+        } @else {
+          <label class="lookup-label">Find an encounter</label>
+          <div class="lookup-input">
+            <span class="prefix">#</span>
+            <select [formControl]="encounterIdControl">
+              <option value="">-- Select encounter --</option>
+              @for (e of encounters(); track e.encounterId) {
+                <option [value]="e.encounterId">{{ e.encounterId }} - {{ e.patientName}}</option>
+              }
+            </select>
+          </div>
+          @if (encounterIdControl.touched && encounterIdControl.invalid) {
+            <small class="error">Select an encounter.</small>
+          }
+        }
+      </div>
+
+      <div class="lookup-actions">
+        <button type="submit" class="btn-primary" [disabled]="loading()">
+          @if (loading()) {
+            <span class="spinner-border spinner-border-sm me-2"></span>Loading…
+          } @else {
+            <i class="bi bi-arrow-right-circle me-1"></i> Open encounter
+          }
+        </button>
+        @if (currentEncounterId()) {
+          <button type="button" class="btn-secondary" (click)="reset()">
+            <i class="bi bi-x-lg me-1"></i> Clear
+          </button>
+        }
+      </div>
+    </form>
+  </div>
+
+  @if (lastError()) {
+    <div class="error-banner" role="alert">
+      <i class="bi bi-exclamation-octagon-fill"></i>
+      <div>
+        <strong>Couldn't load the encounter</strong>
+        <span>{{ lastError() }}</span>
+      </div>
+      <button type="button" class="btn-secondary btn-compact"
+              (click)="search()" [disabled]="loading()">
+        <i class="bi bi-arrow-clockwise me-1"></i> Retry
+      </button>
+    </div>
+  }
+
+
+  <!-- ── Encounter context + summary ─────────────────────── -->
+  @if (currentEncounterId() && hasSearched()) {
+
+    @if (charges().length > 0 || !loading()) {
+      <div class="context-strip">
+        <div class="context-card context-card--main">
+          <div class="context-icon"><i class="bi bi-clipboard-pulse"></i></div>
+          <div>
+            <span class="context-label">Encounter</span>
+            <span class="context-value">#{{ currentEncounterId() }}</span>
+          </div>
+          <button type="button" class="btn-primary btn-compact" (click)="openAssign()">
+            <i class="bi bi-plus-lg me-1"></i> Assign charge
+          </button>
+        </div>
+
+        <div class="summary-card summary-card--info">
+          <span class="summary-label">Total charges</span>
+          <span class="summary-value">{{ summary().total }}</span>
+          <span class="summary-meta">
+            <span class="pill pill--success">{{ summary().billed }} billed</span>
+            <span class="pill pill--warn">{{ summary().unbilled }} unbilled</span>
+          </span>
+        </div>
+
+        <div class="summary-card summary-card--success">
+          <span class="summary-label">Total amount</span>
+          <span class="summary-value">{{ summary().amount | currency:'INR':'symbol':'1.2-2' }}</span>
+          <span class="summary-meta-text">
+            {{ summary().unbilledAmount | currency:'INR':'symbol':'1.2-2' }} unbilled
+          </span>
+        </div>
+      </div>
+    }
+
+
+    <!-- ── Charges list ───────────────────────────────────── -->
+    <div class="charges-card">
+      @if (loading()) {
+        <div class="loading-list">
+          @for (i of [1,2,3,4]; track i) {
+            <div class="charge-row charge-row--skeleton">
+              <div class="sk sk-icon"></div>
+              <div class="sk-stack">
+                <div class="sk sk-line sk-line--lg"></div>
+                <div class="sk sk-line sk-line--sm"></div>
+              </div>
+              <div class="sk sk-amount"></div>
+            </div>
+          }
+        </div>
+      } @else if (charges().length === 0) {
+        <div class="empty-card">
+          <div class="empty-icon"><i class="bi bi-receipt"></i></div>
+          <span class="empty-tag">
+            <i class="bi bi-check-circle-fill me-1"></i>
+            Encounter #{{ currentEncounterId() }} loaded
+          </span>
+          <h3>No charges yet on this encounter</h3>
+          <p>
+            Assign a procedure code below to start building the bill.
+            You can always come back and add more later.
+          </p>
+          <button type="button" class="btn-primary" (click)="openAssign()">
+            <i class="bi bi-plus-lg me-1"></i> Assign first charge
+          </button>
+        </div>
+      } @else {
+        <ul class="charge-list">
+          @for (c of charges(); track c.chargeId) {
+            <li class="charge-row" [class.is-billed]="isBilled(c.status)">
+              <span class="charge-icon">
+                <i class="bi" [ngClass]="iconForCode(c.code)"></i>
+              </span>
+
+              <div class="charge-info">
+                <div class="charge-title">
+                  <span class="charge-code">{{ c.code }}</span>
+                  <span class="charge-id">· Charge #{{ c.chargeId }}</span>
+                </div>
+                <span class="charge-desc">{{ c.description || '—' }}</span>
+              </div>
+
+              <div class="charge-amount">
+                <span class="amount-value">
+                  {{ c.amount | currency:'INR':'symbol':'1.2-2' }}
+                </span>
+                <span
+                  class="status-chip"
+                  [attr.data-tone]="isBilled(c.status) ? 'success' : 'warn'">
+                  <span class="dot"></span>
+                  {{ isBilled(c.status) ? 'Billed' : 'Unbilled' }}
+                </span>
+              </div>
+
+              <div class="charge-actions">
+                @if (canEditAmount() && !isBilled(c.status)) {
+                  <button type="button" class="btn-icon" (click)="openEdit(c)" title="Edit amount">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                } @else if (canEditAmount() && isBilled(c.status)) {
+                  <span class="btn-icon-disabled" title="Already billed">
+                    <i class="bi bi-lock-fill"></i>
+                  </span>
+                }
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+  } @else {
+    <!-- ── Pre-search hero ───────────────────────────────── -->
+    <div class="hero-empty">
+      <div class="hero-illustration">
+        <div class="hero-glyph hero-glyph--a"><i class="bi bi-receipt"></i></div>
+        <div class="hero-glyph hero-glyph--b"><i class="bi bi-cash-coin"></i></div>
+        <div class="hero-glyph hero-glyph--c"><i class="bi bi-clipboard-check"></i></div>
+      </div>
+      <h2>Start by entering an encounter ID</h2>
+      <p>
+        You'll see all assigned charges with their billing status. From there
+        you can assign new procedure codes or update amounts (Admin).
+      </p>
+    </div>
+  }
+
+
+  <!-- ── Assign modal ────────────────────────────────────── -->
+  @if (showAssign()) {
+    <div class="modal-backdrop-custom" (click)="closeAssign()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Encounter #{{ currentEncounterId() }}</span>
+            <h2>Assign visit charge</h2>
+            <p>Pick a procedure code. Amount defaults to the catalog price — override if needed.</p>
+          </div>
+          <button class="icon-btn" (click)="closeAssign()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </header>
+
+        <form class="modal-form" [formGroup]="assignForm" (ngSubmit)="submitAssign()" novalidate>
+          <div class="grid-2">
+            <div class="field grid-2-span">
+              <label>Procedure code *</label>
+              <select
+                class="text-input"
+                formControlName="codeId"
+                (change)="onCodeChange()">
+                <option [ngValue]="0">
+                  @if (codesLoading()) { Loading codes… } @else { Select a procedure code }
+                </option>
+                @for (c of procedureCodes(); track c.codeId) {
+                  <option [ngValue]="c.codeId">
+                    {{ c.code }} — {{ c.description }} ({{ c.price | currency:'INR':'symbol':'1.2-2' }})
+                  </option>
+                }
+              </select>
+              @if (assignForm.controls.codeId.touched && assignForm.controls.codeId.errors) {
+                <small class="error">A procedure code is required.</small>
+              }
+            </div>
+
+            <div class="field grid-2-span">
+              <label>Amount (optional override)</label>
+              <input
+                class="text-input"
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="Leave empty to use catalog price"
+                formControlName="amount" />
+              <small class="field-hint">
+                <i class="bi bi-info-circle me-1"></i>
+                If left empty the backend uses the procedure code's catalog price.
+              </small>
+            </div>
+          </div>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeAssign()" [disabled]="saving()">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Assigning…
+              } @else {
+                <i class="bi bi-plus-lg me-1"></i> Assign charge
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+
+  <!-- ── Edit amount modal ───────────────────────────────── -->
+  @if (showEdit()) {
+    <div class="modal-backdrop-custom" (click)="closeEdit()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card modal-card--sm">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Charge #{{ editing()?.chargeId }}</span>
+            <h2>Update amount</h2>
+            <p>{{ editing()?.code }} — {{ editing()?.description }}</p>
+          </div>
+          <button class="icon-btn" (click)="closeEdit()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </header>
+
+        <form class="modal-form" [formGroup]="editForm" (ngSubmit)="submitEdit()" novalidate>
+          <div class="field">
+            <label>New amount *</label>
+            <div class="amount-input">
+              <span class="amount-prefix">₹</span>
+              <input
+                class="text-input"
+                type="number"
+                min="0.01"
+                step="0.01"
+                formControlName="amount" />
+            </div>
+            @if (editForm.controls.amount.touched && editForm.controls.amount.errors; as e) {
+              <small class="error">
+                @if (e['required']) { Amount is required. }
+                @else if (e['min']) { Amount must be greater than zero. }
+              </small>
+            }
+          </div>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeEdit()" [disabled]="saving()">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Saving…
+              } @else {
+                <i class="bi bi-check2 me-1"></i> Save amount
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+</section>

@@ -1,0 +1,171 @@
+<section class="reports-page">
+
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon"><i class="bi bi-file-earmark-medical"></i></div>
+      <div>
+        <span class="eyebrow">Lab tech</span>
+        <h1 class="page-title">Submit imaging report</h1>
+        <p class="page-sub">
+          Document findings &amp; impression for an imaging order, optionally
+          attaching the rendered study.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-grid">
+
+    <!-- ── Form card ─────────────────────────────────────── -->
+    <section class="form-card">
+      <div class="form-banner">
+        <div class="form-banner-glow"></div>
+        <div class="form-banner-icon"><i class="bi bi-radioactive"></i></div>
+        <div>
+          <h2>New report</h2>
+          <p>PDF, image (PNG/JPG) or DICOM up to 25 MB.</p>
+        </div>
+      </div>
+
+      <form class="form-body" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        <div class="field">
+          <label>Imaging order ID *</label>
+          <div class="prefix-input">
+            <span class="prefix">#</span>
+            <input class="text-input" type="number" min="1" formControlName="imagingOrderId" placeholder="e.g. 42" />
+          </div>
+          @if (form.controls.imagingOrderId.touched && form.controls.imagingOrderId.errors) {
+            <small class="error">Valid imaging order ID is required.</small>
+          }
+        </div>
+
+        <div class="grid-2">
+          <div class="field grid-2-span">
+            <label>Findings *</label>
+            <textarea
+              class="text-input"
+              rows="5"
+              formControlName="findings"
+              placeholder="Describe the observed anatomy, abnormalities, measurements, comparisons…"></textarea>
+            @if (form.controls.findings.touched && form.controls.findings.errors) {
+              <small class="error">Findings are required.</small>
+            }
+          </div>
+
+          <div class="field grid-2-span">
+            <label>Impression *</label>
+            <textarea
+              class="text-input"
+              rows="3"
+              formControlName="impression"
+              placeholder="Concise summary or diagnosis (e.g. No acute findings)…"></textarea>
+            @if (form.controls.impression.touched && form.controls.impression.errors) {
+              <small class="error">Impression is required.</small>
+            }
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Attach report file <span class="optional">(optional)</span></label>
+          <div
+            class="dropzone"
+            [class.has-file]="!!file()"
+            [class.is-active]="dragActive()"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)">
+
+            @if (!file()) {
+              <div class="dropzone-empty">
+                <div class="dz-icon"><i class="bi bi-cloud-arrow-up"></i></div>
+                <strong>Drag &amp; drop the file</strong>
+                <span>or
+                  <label class="dz-link">
+                    browse
+                    <input type="file" hidden (change)="selectFile($event)" />
+                  </label>
+                </span>
+                <small>PDF · PNG/JPG · DICOM — up to 25 MB</small>
+              </div>
+            } @else {
+              <div class="dropzone-file">
+                <div class="file-thumb"><i class="bi" [ngClass]="fileIcon(file()!.name)"></i></div>
+                <div class="file-meta">
+                  <span class="file-name">{{ file()!.name }}</span>
+                  <span class="file-size">{{ formatSize(file()!.size) }}</span>
+                </div>
+                <button type="button" class="file-remove" (click)="removeFile()" aria-label="Remove">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+            }
+          </div>
+          @if (fileError()) {
+            <small class="error">{{ fileError() }}</small>
+          }
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>Submitting…
+            } @else {
+              <i class="bi bi-send me-1"></i> Submit report
+            }
+          </button>
+        </div>
+      </form>
+    </section>
+
+
+    <!-- ── Side log ──────────────────────────────────────── -->
+    <aside class="log-card">
+      <header class="log-head">
+        <div>
+          <h3>This session</h3>
+          <p>Reports you've submitted since opening this page.</p>
+        </div>
+        @if (submitted().length > 0) {
+          <button class="link-btn" (click)="clearLog()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Clear
+          </button>
+        }
+      </header>
+
+      @if (submitted().length === 0) {
+        <div class="log-empty">
+          <div class="log-empty-icon"><i class="bi bi-clipboard2-pulse"></i></div>
+          <strong>No submissions yet</strong>
+          <span>Submitted reports will appear here.</span>
+        </div>
+      } @else {
+        <ul class="log-list">
+          @for (s of submitted(); track s.submittedAt.getTime()) {
+            <li class="log-item">
+              <div class="log-icon"><i class="bi bi-file-earmark-medical"></i></div>
+              <div class="log-meta">
+                <span class="log-name">Order #{{ s.imagingOrderId }}</span>
+                <span class="log-impression">{{ s.impression }}</span>
+                @if (s.fileName) {
+                  <span class="log-file"><i class="bi bi-paperclip me-1"></i>{{ s.fileName }}</span>
+                }
+                <span class="log-date">{{ s.submittedAt | date:'short' }}</span>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="log-tip">
+        <i class="bi bi-info-circle"></i>
+        <p>
+          Files are stored alongside the imaging order. The Physician will see
+          your findings &amp; impression in the order's <strong>Reports</strong> drawer.
+        </p>
+      </div>
+    </aside>
+
+  </div>
+
+</section>

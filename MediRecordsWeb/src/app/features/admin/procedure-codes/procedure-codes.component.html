@@ -1,0 +1,197 @@
+<section class="procedures-page">
+
+  <!-- ── Stats strip ─────────────────────────────────────── -->
+  <div class="stats-strip">
+    <div class="stat">
+      <span class="stat-label">Total codes</span>
+      <span class="stat-value">{{ codes().length }}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Avg. price</span>
+      <span class="stat-value">{{ avgPrice() | currency:'INR':'symbol':'1.2-2' }}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Catalog value</span>
+      <span class="stat-value">{{ totalValue() | currency:'INR':'symbol':'1.2-2' }}</span>
+    </div>
+  </div>
+
+  <!-- ── Toolbar ─────────────────────────────────────────── -->
+  <header class="toolbar">
+    <div class="search">
+      <i class="bi bi-search"></i>
+      <input
+        type="search"
+        placeholder="Search by code or description…"
+        [value]="searchTerm()"
+        (input)="setSearch($any($event.target).value)" />
+    </div>
+    <div class="toolbar-filters">
+      <button class="btn-primary" type="button" (click)="openCreate()">
+        <i class="bi bi-plus-lg me-1"></i> Add code
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Table ───────────────────────────────────────────── -->
+  <div class="table-card">
+    @if (loading()) {
+      <div class="state-row">
+        <span class="spinner-border spinner-border-sm me-2"></span> Loading procedure codes…
+      </div>
+    } @else if (filtered().length === 0) {
+      <div class="state-row state-empty">
+        <i class="bi bi-receipt"></i>
+        <span>No procedure codes match your filter.</span>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table class="data-table">
+          <tbody>
+            <tr>
+              <th>Code</th>
+              <th>Description</th>
+              <th class="text-end">Price</th>
+              <th class="text-end">Actions</th>
+            </tr>
+            @for (c of filtered(); track c.codeId) {
+              <tr>
+                <td>
+                  <div class="cell-code">
+                    <span class="code-icon"><i class="bi" [ngClass]="iconFor(c.code)"></i></span>
+                    <div>
+                      <span class="code-tag">{{ c.code }}</span>
+                      <span class="code-id">#{{ c.codeId }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-muted">{{ c.description || '—' }}</td>
+                <td class="text-end price-cell">
+                  {{ c.price | currency:'INR':'symbol':'1.2-2' }}
+                </td>
+                <td class="text-end">
+                  <button class="icon-btn" type="button" (click)="openEdit(c)" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+
+  <!-- ── Create modal ────────────────────────────────────── -->
+  @if (showCreate()) {
+    <div class="modal-backdrop-custom" (click)="closeCreate()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Procedure codes</span>
+            <h2>Add a new code</h2>
+            <p>Codes are used when assigning visit charges.</p>
+          </div>
+          <button class="icon-btn" (click)="closeCreate()" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+        </header>
+
+        <form class="modal-form" [formGroup]="createForm" (ngSubmit)="submitCreate()" novalidate>
+          <div class="grid-2">
+            <div class="field">
+              <label>Procedure type *</label>
+              <select class="text-input" formControlName="code">
+                @for (k of procedureKeys; track k) {
+                  <option [ngValue]="k">{{ k }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Price (INR) *</label>
+              <input class="text-input" type="number" min="0.01" step="0.01" formControlName="price" />
+              @if (createForm.controls.price.touched && createForm.controls.price.errors; as e) {
+                <small class="error">
+                  @if (e['required']) { Price is required. }
+                  @else if (e['min']) { Price must be greater than zero. }
+                </small>
+              }
+            </div>
+
+            <div class="field grid-2-span">
+              <label>Description *</label>
+              <input class="text-input" formControlName="description" placeholder="Diagnostic chest x-ray, single view" />
+              @if (createForm.controls.description.touched && createForm.controls.description.errors) {
+                <small class="error">Description is required.</small>
+              }
+            </div>
+          </div>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeCreate()" [disabled]="saving()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Creating…
+              } @else {
+                <i class="bi bi-check2 me-1"></i> Create code
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- ── Edit modal ──────────────────────────────────────── -->
+  @if (showEdit()) {
+    <div class="modal-backdrop-custom" (click)="closeEdit()"></div>
+    <div class="modal-shell" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <header class="modal-head">
+          <div>
+            <span class="eyebrow">Procedure codes</span>
+            <h2>Edit code</h2>
+            <p>{{ editing()?.code }} · #{{ editing()?.codeId }}</p>
+          </div>
+          <button class="icon-btn" (click)="closeEdit()" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+        </header>
+
+        <form class="modal-form" [formGroup]="editForm" (ngSubmit)="submitEdit()" novalidate>
+          <div class="grid-2">
+            <div class="field grid-2-span">
+              <label>Description *</label>
+              <input class="text-input" formControlName="description" />
+              @if (editForm.controls.description.touched && editForm.controls.description.errors) {
+                <small class="error">Description is required.</small>
+              }
+            </div>
+
+            <div class="field">
+              <label>Price (USD) *</label>
+              <input class="text-input" type="number" min="0.01" step="0.01" formControlName="price" />
+              @if (editForm.controls.price.touched && editForm.controls.price.errors; as e) {
+                <small class="error">
+                  @if (e['required']) { Price is required. }
+                  @else if (e['min']) { Price must be greater than zero. }
+                </small>
+              }
+            </div>
+          </div>
+
+          <footer class="modal-foot">
+            <button type="button" class="btn-secondary" (click)="closeEdit()" [disabled]="saving()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Saving…
+              } @else {
+                <i class="bi bi-check2 me-1"></i> Save changes
+              }
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
+  }
+
+</section>

@@ -1,0 +1,243 @@
+<section class="workspace-page">
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-clipboard2-pulse"></i>
+        <span class="header-pulse"></span>
+      </div>
+      <div>
+        <span class="eyebrow">Physician workspace</span>
+        <h1 class="page-title">Today's encounters</h1>
+        <p class="page-sub">
+          Review and progress your encounters. Status moves Open → Closed → Locked.
+        </p>
+      </div>
+    </div>
+
+    <div class="date-control">
+      <button class="date-btn" (click)="shiftDate(-1)" aria-label="Previous day">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <input
+        class="date-input"
+        type="date"
+        [formControl]="dateControl"
+        (change)="load()" />
+      <button class="date-btn" (click)="shiftDate(1)" aria-label="Next day">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+      <button class="date-today" (click)="setToday()">Today</button>
+    </div>
+  </header>
+
+  <!-- ── Stats ──────────────────────────────────────────── -->
+  <div class="stats-grid">
+    <article class="stat-card stat-card--primary">
+      <div class="stat-icon"><i class="bi bi-collection"></i></div>
+      <div>
+        <span class="stat-label">Encounters</span>
+        <span class="stat-value">{{ stats().total }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--success">
+      <div class="stat-icon"><i class="bi bi-circle"></i></div>
+      <div>
+        <span class="stat-label">Open</span>
+        <span class="stat-value">{{ stats().open }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--muted">
+      <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
+      <div>
+        <span class="stat-label">Closed</span>
+        <span class="stat-value">{{ stats().closed }}</span>
+      </div>
+    </article>
+    <article class="stat-card stat-card--danger">
+      <div class="stat-icon"><i class="bi bi-lock-fill"></i></div>
+      <div>
+        <span class="stat-label">Locked</span>
+        <span class="stat-value">{{ stats().locked }}</span>
+      </div>
+    </article>
+  </div>
+
+  <!-- ── Status tabs ────────────────────────────────────── -->
+  <div class="status-tabs">
+    <button class="tab" [class.active]="statusFilter() === 'all'" (click)="setStatusFilter('all')">
+      All
+    </button>
+    @for (s of statuses; track s.value) {
+      <button
+        class="tab"
+        [class.active]="statusFilter() === s.value"
+        (click)="setStatusFilter(s.value)">
+        <span class="tab-dot" [attr.data-tone]="s.tone"></span>
+        {{ s.label }}
+      </button>
+    }
+  </div>
+
+  <!-- ── Encounter cards ────────────────────────────────── -->
+  @if (loading()) {
+    <div class="encounter-grid">
+      @for (i of [1,2,3,4,5,6]; track i) {
+        <div class="encounter-card encounter-card--skeleton">
+          <div class="sk sk-icon"></div>
+          <div class="sk sk-line sk-line--lg"></div>
+          <div class="sk sk-line sk-line--sm"></div>
+          <div class="sk sk-line sk-line--xs"></div>
+        </div>
+      }
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="empty-card">
+      <div class="empty-icon"><i class="bi bi-calendar2-x"></i></div>
+      <h3>No encounters for this day</h3>
+      <p>Pick another date or wait for new encounters to be created.</p>
+    </div>
+  } @else {
+    <div class="encounter-grid">
+      @for (e of filtered(); track e.encounterId) {
+        <article
+          class="encounter-card"
+          [attr.data-tone]="toneFor(statusName(e.status))"
+          (click)="open(e)">
+          <header class="encounter-card-head">
+            <span class="encounter-icon">
+              <i class="bi" [ngClass]="iconFor(e.visitType)"></i>
+            </span>
+            <div class="encounter-id">
+              <span class="encounter-time">{{ e.date | date:'h:mm a' }}</span>
+              <span class="encounter-num">Encounter #{{ e.encounterId }}</span>
+            </div>
+            <span class="status-chip" [attr.data-tone]="toneFor(statusName(e.status))">
+              <span class="dot"></span>
+              {{ statusName(e.status) }}
+            </span>
+          </header>
+
+          <div class="encounter-body">
+            <span class="encounter-patient">{{ e.patientName }}</span>
+            <span class="encounter-visit">
+              <i class="bi bi-tag me-1"></i>{{ e.visitType }}
+            </span>
+          </div>
+
+          <footer class="encounter-foot">
+            <span class="open-link">Open chart <i class="bi bi-arrow-right"></i></span>
+          </footer>
+        </article>
+      }
+    </div>
+  }
+
+
+  <!-- ── Detail drawer ──────────────────────────────────── -->
+  @if (selected(); as enc) {
+    <div class="modal-backdrop-custom" (click)="close()"></div>
+    <aside class="encounter-drawer">
+
+      <header class="drawer-head">
+        <div class="drawer-head-row">
+          <div class="drawer-avatar">{{ initials(enc.patientName) }}</div>
+          <div class="drawer-titles">
+            <span class="eyebrow">Encounter #{{ enc.encounterId }}</span>
+            <h2>{{ enc.patientName || 'Loading…' }}</h2>
+            <span class="muted">
+              {{ enc.visitType }} · {{ enc.date | date:'EEE, MMM d · h:mm a' }}
+            </span>
+          </div>
+          <button class="icon-btn" (click)="close()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="drawer-meta-grid">
+          <div class="meta-item">
+            <span class="meta-label">Patient ID</span>
+            <span class="meta-value">#{{ enc.patientId || '—' }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Provider</span>
+            <span class="meta-value">{{ enc.providerName || '—' }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Status</span>
+            <span class="status-chip" [attr.data-tone]="toneFor(statusName(enc.status))">
+              <span class="dot"></span>
+              {{ statusName(enc.status) }}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <div class="drawer-body">
+        @if (detailLoading()) {
+          <div class="muted-row">
+            <span class="spinner-border spinner-border-sm me-2"></span>Loading details…
+          </div>
+        }
+
+        <section class="drawer-section">
+          <header>
+            <h3><i class="bi bi-flag me-1"></i> Move encounter status</h3>
+            @if (isLocked()) {
+              <span class="lock-note">
+                <i class="bi bi-lock-fill me-1"></i> Locked encounters can't be changed
+              </span>
+            }
+          </header>
+
+          <div class="status-grid">
+            @for (s of statuses; track s.value) {
+              <button
+                type="button"
+                class="status-btn"
+                [attr.data-tone]="s.tone"
+                [class.selected]="statusName(enc.status) === s.value"
+                [disabled]="statusSaving() || isLocked() || statusName(enc.status) === s.value"
+                (click)="changeStatus(s.value)">
+                <i class="bi" [ngClass]="s.icon"></i>
+                <span>{{ s.label }}</span>
+                @if (statusName(enc.status) === s.value) {
+                  <i class="bi bi-check-lg ms-auto"></i>
+                }
+              </button>
+            }
+          </div>
+          @if (statusSaving()) {
+            <div class="muted-row">
+              <span class="spinner-border spinner-border-sm me-2"></span>Updating status…
+            </div>
+          }
+        </section>
+
+        <section class="drawer-section">
+          <header>
+            <h3><i class="bi bi-lightning-charge me-1"></i> Chart actions</h3>
+          </header>
+          <p class="muted">
+            Open any of these for Encounter #{{ enc.encounterId }} — the encounter is auto-filled for you.
+          </p>
+          <div class="chart-actions-grid">
+            @for (a of chartActions; track a.route) {
+              <button
+                type="button"
+                class="chart-action-btn"
+                [disabled]="isLocked()"
+                (click)="gotoChart(a.route, !!a.passPatient)">
+                <i class="bi" [ngClass]="a.icon"></i>
+                <span>{{ a.label }}</span>
+                <i class="bi bi-arrow-right ms-auto"></i>
+              </button>
+            }
+          </div>
+        </section>
+      </div>
+    </aside>
+  }
+
+</section>

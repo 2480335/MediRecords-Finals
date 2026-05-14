@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MedicalHistoryService } from '../../core/services/medical-history.service';
 import { PatientService } from '../../core/services/patient.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import {
   COMMON_CONDITIONS,
   MedicalHistoryCreateRequest
@@ -19,7 +20,7 @@ interface RecordedHistory extends MedicalHistoryCreateRequest {
 @Component({
   selector: 'app-medical-history',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './medical-history.component.html',
   styleUrl: './medical-history.component.scss'
 })
@@ -31,6 +32,9 @@ export class MedicalHistoryComponent implements OnInit {
 
   readonly commonConditions = COMMON_CONDITIONS;
   readonly patients = signal<PatientLookup[]>([]);
+  readonly patientOptions = computed<SearchableOption[]>(() =>
+    this.patients().map((p) => ({ value: p.patientId, label: p.name }))
+  );
 
   ngOnInit(): void {
     this.patientApi.getAll().subscribe({

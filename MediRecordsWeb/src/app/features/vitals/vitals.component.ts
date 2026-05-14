@@ -6,6 +6,7 @@ import { ActivatedRoute } from '@angular/router';
 import { EncounterService } from '../../core/services/encounter.service';
 import { ToastService } from '../../core/services/toast.service';
 import { VitalSignService } from '../../core/services/vital-sign.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import {
   BmiCategory,
   classifyBmi,
@@ -29,7 +30,7 @@ interface CapturedVital {
 @Component({
   selector: 'app-vitals',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './vitals.component.html',
   styleUrl: './vitals.component.scss'
 })
@@ -42,6 +43,9 @@ export class VitalsComponent implements OnInit {
 
   readonly encounters = signal<EncounterLookup[]>([]);
   readonly lockedEncounter = signal<{ id: number; patientName: string } | null>(null);
+  readonly encounterOptions = computed<SearchableOption[]>(() =>
+    this.encounters().map((e) => ({ value: e.encounterId, label: `#${e.encounterId}` }))
+  );
 
   ngOnInit(): void {
     const params = this.route.snapshot.queryParamMap;

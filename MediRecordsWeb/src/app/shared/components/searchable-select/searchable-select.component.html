@@ -1,0 +1,53 @@
+<div class="ss-wrap" [class.ss-disabled]="disabledState()">
+  <button
+    type="button"
+    class="ss-control"
+    [class.ss-open]="open()"
+    [disabled]="disabledState()"
+    (click)="toggle()">
+    <span class="ss-value" [class.ss-placeholder]="!selectedLabel()">
+      {{ selectedLabel() || placeholder }}
+    </span>
+    <i class="bi ss-caret" [class.bi-chevron-up]="open()" [class.bi-chevron-down]="!open()"></i>
+  </button>
+
+  @if (open()) {
+    <div class="ss-panel" role="listbox">
+      <div class="ss-search">
+        <i class="bi bi-search"></i>
+        <input
+          #searchInput
+          type="text"
+          [value]="query()"
+          (input)="setQuery($any($event.target).value)"
+          (keydown.escape)="close()"
+          placeholder="Type to search…"
+          autocomplete="off" />
+      </div>
+
+      <ul class="ss-options">
+        @if (emptyLabel) {
+          <li
+            class="ss-option ss-option--empty"
+            [class.ss-selected]="selectedValue() === emptyValue || selectedValue() === null || selectedValue() === 0"
+            (click)="selectEmpty()">
+            <i class="bi bi-circle me-2"></i>{{ emptyLabel }}
+          </li>
+        }
+        @for (o of filtered(); track trackByValue($index, o)) {
+          <li
+            class="ss-option"
+            [class.ss-selected]="selectedValue() === o.value"
+            (click)="select(o)">
+            <span class="ss-option-label">{{ o.label }}</span>
+            @if (selectedValue() === o.value) {
+              <i class="bi bi-check2 ss-check"></i>
+            }
+          </li>
+        } @empty {
+          <li class="ss-empty">No matches</li>
+        }
+      </ul>
+    </div>
+  }
+</div>

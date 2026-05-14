@@ -6,6 +6,7 @@ import { ActivatedRoute } from '@angular/router';
 import { EncounterService } from '../../core/services/encounter.service';
 import { NursingNoteService } from '../../core/services/nursing-note.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import { NursingNoteResponse } from '../../core/models/nursing-note.models';
 import { EncounterLookup } from '../../core/models/encounter.models';
 
@@ -14,7 +15,7 @@ const MAX_NOTES = 50;
 @Component({
   selector: 'app-nursing-notes',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './nursing-notes.component.html',
   styleUrl: './nursing-notes.component.scss'
 })
@@ -28,6 +29,9 @@ export class NursingNotesComponent implements OnInit {
   readonly maxLength = MAX_NOTES;
   readonly encounters = signal<EncounterLookup[]>([]);
   readonly lockedEncounter = signal<{ id: number; patientName: string } | null>(null);
+  readonly encounterOptions = computed<SearchableOption[]>(() =>
+    this.encounters().map((e) => ({ value: e.encounterId, label: `#${e.encounterId}` }))
+  );
 
   ngOnInit(): void {
     const params = this.route.snapshot.queryParamMap;

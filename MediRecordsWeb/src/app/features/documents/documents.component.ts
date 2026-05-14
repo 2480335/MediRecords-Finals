@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { DocumentService } from '../../core/services/document.service';
 import { EncounterService } from '../../core/services/encounter.service';
 import { PatientService } from '../../core/services/patient.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import {
   DOC_TYPES,
   DocType,
@@ -19,7 +20,7 @@ import { PatientLookup } from '../../core/models/patient.models';
 @Component({
   selector: 'app-documents',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './documents.component.html',
   styleUrl: './documents.component.scss'
 })
@@ -35,6 +36,13 @@ export class DocumentsComponent implements OnInit {
   readonly patients = signal<PatientLookup[]>([]);
   readonly encounters = signal<EncounterLookup[]>([]);
   readonly lockedEncounter = signal<{ id: number; patientId: number; patientName: string } | null>(null);
+
+  readonly patientOptions = computed<SearchableOption[]>(() =>
+    this.patients().map((p) => ({ value: p.patientId, label: p.name }))
+  );
+  readonly encounterOptions = computed<SearchableOption[]>(() =>
+    this.encounters().map((e) => ({ value: e.encounterId, label: `#${e.encounterId}` }))
+  );
 
   readonly form = this.fb.nonNullable.group({
     patientId: [0, [Validators.required, Validators.min(1)]],

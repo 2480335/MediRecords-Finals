@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AllergyService } from '../../core/services/allergy.service';
 import { PatientService } from '../../core/services/patient.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import {
   AllergyCreateRequest,
   AllergySeverity,
@@ -20,7 +21,7 @@ interface RecordedAllergy extends AllergyCreateRequest {
 @Component({
   selector: 'app-allergies',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './allergies.component.html',
   styleUrl: './allergies.component.scss'
 })
@@ -32,6 +33,9 @@ export class AllergiesComponent implements OnInit {
 
   readonly severities = SEVERITY_OPTIONS;
   readonly patients = signal<PatientLookup[]>([]);
+  readonly patientOptions = computed<SearchableOption[]>(() =>
+    this.patients().map((p) => ({ value: p.patientId, label: p.name }))
+  );
 
   ngOnInit(): void {
     this.patientApi.getAll().subscribe({

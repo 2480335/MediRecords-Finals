@@ -44,12 +44,13 @@
     <form class="filter-form" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
       <div class="filter">
         <label>Patient</label>
-        <select class="text-input" formControlName="patientId">
-          <option value="">Any patient</option>
-          @for (p of patients(); track p.patientId) {
-            <option [value]="p.patientId">{{ p.name }}</option>
-          }
-        </select>
+        <app-searchable-select
+          formControlName="patientId"
+          placeholder="Any patient"
+          emptyLabel="Any patient"
+          [emptyValue]="''"
+          [options]="patientOptions()">
+        </app-searchable-select>
       </div>
       <div class="filter">
         <label>Patient name</label>

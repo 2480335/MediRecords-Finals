@@ -5,6 +5,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ReportsService } from '../../../core/services/reports.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { UserService } from '../../../core/services/user.service';
+import { SearchableSelectComponent, SearchableOption } from '../../../shared/components/searchable-select/searchable-select.component';
 import {
   ClinicKpiReport,
   DocumentationCompletenessReport,
@@ -26,7 +27,7 @@ const TAB_META: Record<Tab, { label: string; icon: string; description: string }
 @Component({
   selector: 'app-admin-reports',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './reports.component.html',
   styleUrl: './reports.component.scss'
 })
@@ -38,6 +39,9 @@ export class ReportsComponent implements OnInit {
 
   readonly activeTab = signal<Tab>('kpis');
   readonly providers = signal<ProviderLookup[]>([]);
+  readonly providerOptions = computed<SearchableOption[]>(() =>
+    this.providers().map((pr) => ({ value: String(pr.providerId), label: pr.name }))
+  );
 
   ngOnInit(): void {
     this.userApi.getProviders().subscribe({

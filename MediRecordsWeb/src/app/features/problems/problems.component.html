@@ -33,12 +33,11 @@
             <label>Patient *</label>
             <div class="prefix-input">
               <span class="prefix"><i class="bi bi-person"></i></span>
-              <select class="text-input" formControlName="patientId">
-                <option [ngValue]="0">-- Select patient --</option>
-                @for (p of patients(); track p.patientId) {
-                  <option [ngValue]="p.patientId">{{ p.name }}</option>
-                }
-              </select>
+              <app-searchable-select
+                formControlName="patientId"
+                placeholder="-- Select patient --"
+                [options]="patientOptions()">
+              </app-searchable-select>
             </div>
             @if (form.controls.patientId.touched && form.controls.patientId.errors) {
               <small class="error">Patient selection is required.</small>

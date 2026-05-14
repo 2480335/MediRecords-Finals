@@ -6,6 +6,7 @@ import { ActivatedRoute } from '@angular/router';
 import { EncounterService } from '../../core/services/encounter.service';
 import { SOAPNoteService } from '../../core/services/soap-note.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import { SOAPNoteResponse } from '../../core/models/soap-note.models';
 import { EncounterLookup } from '../../core/models/encounter.models';
 
@@ -23,7 +24,7 @@ interface SectionMeta {
 @Component({
   selector: 'app-soap-notes',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './soap-notes.component.html',
   styleUrl: './soap-notes.component.scss'
 })
@@ -36,6 +37,9 @@ export class SOAPNotesComponent implements OnInit {
 
   readonly encounters = signal<EncounterLookup[]>([]);
   readonly lockedEncounter = signal<{ id: number; patientName: string } | null>(null);
+  readonly encounterOptions = computed<SearchableOption[]>(() =>
+    this.encounters().map((e) => ({ value: e.encounterId, label: `#${e.encounterId}` }))
+  );
 
   ngOnInit(): void {
     const params = this.route.snapshot.queryParamMap;

@@ -40,12 +40,13 @@
       </div>
       <div class="filter">
         <label>Provider</label>
-        <select class="text-input" formControlName="providerId">
-          <option value="">Any provider</option>
-          @for (pr of providers(); track pr.providerId) {
-            <option [value]="pr.providerId">{{ pr.name }}</option>
-          }
-        </select>
+        <app-searchable-select
+          formControlName="providerId"
+          placeholder="Any provider"
+          emptyLabel="Any provider"
+          [emptyValue]="''"
+          [options]="providerOptions()">
+        </app-searchable-select>
       </div>
       <div class="filter-actions">
         <button type="submit" class="btn-primary">

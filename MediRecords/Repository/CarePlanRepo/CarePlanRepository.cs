@@ -37,6 +37,23 @@ public class CarePlanRepository : ICarePlanRepository
 
     }
 
+    /// <summary>
+    /// Returns the patient's existing Active care plan (Status == false), if any.
+    /// Returned with tracking enabled so callers can mutate and save.
+    /// </summary>
+    public async Task<CarePlan?> GetActiveByPatientAsync(int patientId)
+    {
+        return await _context.CarePlans
+            .FirstOrDefaultAsync(cp => cp.PatientId == patientId && cp.Status == false);
+    }
+
+    public async Task<CarePlan> UpdateAsync(CarePlan carePlan)
+    {
+        _context.CarePlans.Update(carePlan);
+        await _context.SaveChangesAsync();
+        return carePlan;
+    }
+
     public async Task<IEnumerable<CarePlan>> GetAsync(int? patientId, string? patientName, bool? status)
     {
         IQueryable<CarePlan> query = _context.CarePlans

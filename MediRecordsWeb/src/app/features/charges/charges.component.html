@@ -35,15 +35,11 @@
           </div>
         } @else {
           <label class="lookup-label">Find an encounter</label>
-          <div class="lookup-input">
-            <span class="prefix">#</span>
-            <select [formControl]="encounterIdControl">
-              <option value="">-- Select encounter --</option>
-              @for (e of encounters(); track e.encounterId) {
-                <option [value]="e.encounterId">{{ e.encounterId }} - {{ e.patientName}}</option>
-              }
-            </select>
-          </div>
+          <app-searchable-select
+            [formControl]="encounterIdControl"
+            placeholder="-- Select encounter --"
+            [options]="encounterOptions()">
+          </app-searchable-select>
           @if (encounterIdControl.touched && encounterIdControl.invalid) {
             <small class="error">Select an encounter.</small>
           }

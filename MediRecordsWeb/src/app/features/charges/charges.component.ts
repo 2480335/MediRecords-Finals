@@ -13,6 +13,7 @@ import { BillingService } from '../../core/services/billing.service';
 import { EncounterService } from '../../core/services/encounter.service';
 import { ProcedureCodeService } from '../../core/services/procedure-code.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import { VisitChargeResponse } from '../../core/models/billing.models';
 import { EncounterLookup } from '../../core/models/encounter.models';
 import { ProcedureCodeView } from '../../core/models/procedure-code.models';
@@ -20,7 +21,7 @@ import { ProcedureCodeView } from '../../core/models/procedure-code.models';
 @Component({
   selector: 'app-charges',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './charges.component.html',
   styleUrl: './charges.component.scss'
 })
@@ -36,6 +37,9 @@ export class ChargesComponent implements OnInit {
   readonly canEditAmount = computed(() => this.auth.role() === 'Admin');
   readonly encounters = signal<EncounterLookup[]>([]);
   readonly lockedEncounter = signal<{ id: number; patientName: string } | null>(null);
+  readonly encounterOptions = computed<SearchableOption[]>(() =>
+    this.encounters().map((e) => ({ value: String(e.encounterId), label: `#${e.encounterId}` }))
+  );
 
   // String-backed control to avoid edge cases with Angular's NumberValueAccessor
   // (empty input ⇒ null on number inputs sometimes leaves the control invalid

@@ -5,6 +5,7 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MedicationService } from '../../core/services/medication.service';
 import { PatientService } from '../../core/services/patient.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import {
   MedicationFilter,
   MedicationListItem
@@ -16,7 +17,7 @@ type StatusTab = 'all' | 'Active' | 'Inactive';
 @Component({
   selector: 'app-medications',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './medications.component.html',
   styleUrl: './medications.component.scss'
 })
@@ -28,6 +29,9 @@ export class MedicationsComponent implements OnInit {
 
   readonly meds = signal<MedicationListItem[]>([]);
   readonly patients = signal<PatientLookup[]>([]);
+  readonly patientOptions = computed<SearchableOption[]>(() =>
+    this.patients().map((p) => ({ value: p.patientId, label: p.name }))
+  );
   readonly loading = signal(true);
   readonly searchTerm = signal('');
   readonly statusTab = signal<StatusTab>('all');

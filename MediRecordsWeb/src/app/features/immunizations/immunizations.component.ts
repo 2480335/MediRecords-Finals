@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ImmunizationService } from '../../core/services/immunization.service';
 import { PatientService } from '../../core/services/patient.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import {
   COMMON_VACCINES,
   ImmunizationCreateRequest,
@@ -19,7 +20,7 @@ type StatusFilter = 'all' | 'pending' | 'administered';
 @Component({
   selector: 'app-immunizations',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './immunizations.component.html',
   styleUrl: './immunizations.component.scss'
 })
@@ -33,6 +34,9 @@ export class ImmunizationsComponent implements OnInit {
   readonly canCreate = computed(() => this.auth.role() === 'Physician');
   readonly commonVaccines = COMMON_VACCINES;
   readonly patients = signal<PatientLookup[]>([]);
+  readonly patientOptions = computed<SearchableOption[]>(() =>
+    this.patients().map((p) => ({ value: p.patientId, label: p.name }))
+  );
 
   readonly records = signal<ImmunizationDetails[]>([]);
   readonly loading = signal(true);

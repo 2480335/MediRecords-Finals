@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ProblemService } from '../../core/services/problem.service';
 import { PatientService } from '../../core/services/patient.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import {
   COMMON_DIAGNOSES,
   PROBLEM_STATUSES,
@@ -21,7 +22,7 @@ interface RecordedProblem extends ProblemCreateRequest {
 @Component({
   selector: 'app-problems',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './problems.component.html',
   styleUrl: './problems.component.scss'
 })
@@ -34,6 +35,9 @@ export class ProblemsComponent implements OnInit {
   readonly statuses = PROBLEM_STATUSES;
   readonly commonDiagnoses = COMMON_DIAGNOSES;
   readonly patients = signal<PatientLookup[]>([]);
+  readonly patientOptions = computed<SearchableOption[]>(() =>
+    this.patients().map((p) => ({ value: p.patientId, label: p.name }))
+  );
 
   ngOnInit(): void {
     this.patientApi.getAll().subscribe({

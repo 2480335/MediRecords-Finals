@@ -6,6 +6,7 @@ import { ActivatedRoute } from '@angular/router';
 import { EncounterService } from '../../core/services/encounter.service';
 import { ImagingOrderService } from '../../core/services/imaging-order.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import {
   IMAGING_STUDY_TYPES,
   ImagingOrderResponse,
@@ -17,7 +18,7 @@ import { EncounterLookup } from '../../core/models/encounter.models';
 @Component({
   selector: 'app-imaging-orders',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './imaging-orders.component.html',
   styleUrl: './imaging-orders.component.scss'
 })
@@ -31,6 +32,9 @@ export class ImagingOrdersComponent implements OnInit {
   readonly studyTypes = IMAGING_STUDY_TYPES;
   readonly encounters = signal<EncounterLookup[]>([]);
   readonly lockedEncounter = signal<{ id: number; patientName: string } | null>(null);
+  readonly encounterOptions = computed<SearchableOption[]>(() =>
+    this.encounters().map((e) => ({ value: e.encounterId, label: `#${e.encounterId}` }))
+  );
 
   readonly orders = signal<ImagingOrderResponse[]>([]);
   readonly loading = signal(true);

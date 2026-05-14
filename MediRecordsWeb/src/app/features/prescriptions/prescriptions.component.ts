@@ -8,6 +8,7 @@ import { EncounterService } from '../../core/services/encounter.service';
 import { PrescriptionService } from '../../core/services/prescription.service';
 import { ToastService } from '../../core/services/toast.service';
 import { UserService } from '../../core/services/user.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import {
   COMMON_FREQUENCIES,
   COMMON_ROUTES,
@@ -26,7 +27,7 @@ type StatusTab = 'all' | 'Draft' | 'Issued';
 @Component({
   selector: 'app-prescriptions',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './prescriptions.component.html',
   styleUrl: './prescriptions.component.scss'
 })
@@ -40,11 +41,21 @@ export class PrescriptionsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
 
   readonly canCreate = computed(() => this.auth.role() === 'Physician');
-  readonly canDelete = computed(() => this.auth.role() === 'Admin');
+  readonly canDelete = computed(() => {
+    const role = this.auth.role();
+    return role === 'Admin' || role === 'Physician';
+  });
 
   readonly encounters = signal<EncounterLookup[]>([]);
   readonly providers = signal<ProviderLookup[]>([]);
   readonly lockedEncounter = signal<{ id: number; patientName: string } | null>(null);
+
+  readonly encounterOptions = computed<SearchableOption[]>(() =>
+    this.encounters().map((e) => ({ value: e.encounterId, label: `#${e.encounterId}` }))
+  );
+  readonly providerOptions = computed<SearchableOption[]>(() =>
+    this.providers().map((pr) => ({ value: pr.providerId, label: pr.name }))
+  );
 
   readonly statuses = PRESCRIPTION_STATUSES;
   readonly commonRoutes = COMMON_ROUTES;
@@ -111,6 +122,16 @@ export class PrescriptionsComponent implements OnInit {
 
   ngOnInit(): void {
     this.refresh();
+    // Always load the encounter list — even in locked-encounter mode — so
+    // the list cards / drawer can show the patient's name (instead of just
+    // "Encounter #N") for prescriptions we didn't open from the workspace.
+    this.encounterApi.getAll().subscribe({
+      next: (list) => this.encounters.set(list),
+      error: () => {
+        /* silent — patient name will fall back to encounter id */
+      }
+    });
+
     const params = this.route.snapshot.queryParamMap;
     const encId = Number(params.get('encounterId'));
     if (Number.isFinite(encId) && encId > 0) {
@@ -120,15 +141,22 @@ export class PrescriptionsComponent implements OnInit {
       });
       this.openCreate();
     } else {
-      this.encounterApi.getAll().subscribe({
-        next: (list) => this.encounters.set(list),
-        error: () => this.toast.error('Could not load encounter list')
-      });
       this.userApi.getProviders().subscribe({
         next: (list) => this.providers.set(list),
         error: () => this.toast.error('Could not load provider list')
       });
     }
+  }
+
+  /** Resolve the patient name for a prescription's encounter, falling back
+   *  to the encounter id when the lookup hasn't loaded yet. */
+  patientNameFor(encounterId: number): string {
+    const locked = this.lockedEncounter();
+    if (locked && locked.id === encounterId && locked.patientName) {
+      return locked.patientName;
+    }
+    const enc = this.encounters().find((e) => e.encounterId === encounterId);
+    return enc?.patientName ?? `Encounter #${encounterId}`;
   }
 
   refresh(): void {
@@ -244,9 +272,55 @@ export class PrescriptionsComponent implements OnInit {
       return;
     }
     const v = this.createForm.getRawValue();
+    const encounterId = Number(v.encounterId);
+    const providerId = Number(v.providerId);
+
+    // If a prescription already exists for this encounter, merge the new
+    // items into it (via update) instead of creating a duplicate.
+    const existing = this.prescriptions().find((p) => p.encounterId === encounterId);
+    if (existing) {
+      const mergedItems: PrescriptionItem[] = [
+        ...existing.prescriptionItems.map((i) => ({
+          drugName: i.drugName,
+          dose: i.dose ?? '',
+          frequency: i.frequency ?? '',
+          route: i.route ?? '',
+          durationDays: i.durationDays,
+          instructions: i.instructions ?? ''
+        })),
+        ...this.draftItems()
+      ];
+
+      const updatePayload: PrescriptionWithItemsUpdateRequest = {
+        providerId,
+        // Keep the existing prescription's status — adding items to an
+        // Issued prescription shouldn't silently flip it back to Draft.
+        status: this.statusName(existing.status),
+        prescriptionItems: mergedItems
+      };
+
+      this.saving.set(true);
+      this.api.update(existing.prescriptionId, updatePayload).subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.toast.success(
+            `Added ${this.draftItems().length} item(s) to prescription #${existing.prescriptionId}`
+          );
+          this.closeCreate();
+          this.refresh();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.saving.set(false);
+          this.toast.error(this.errorText(err, 'Could not update prescription'));
+        }
+      });
+      return;
+    }
+
+    // No existing prescription for this encounter — create a new one.
     const payload: PrescriptionWithItemsCreateRequest = {
-      encounterId: Number(v.encounterId),
-      providerId: Number(v.providerId),
+      encounterId,
+      providerId,
       status: v.status,
       prescriptionItems: [...this.draftItems()]
     };

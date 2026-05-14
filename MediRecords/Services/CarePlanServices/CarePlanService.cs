@@ -35,7 +35,60 @@ public class CarePlanService : ICarePlanService
             if (!patientExists)
                 return (false, Constant.CarePlanMessages.PatientNotFound, null);
 
-            var goalsJson = JsonSerializer.Serialize(dto.Goals);
+            // Normalize incoming goals (trim, drop empties).
+            var newGoals = dto.Goals
+                .Where(g => !string.IsNullOrWhiteSpace(g))
+                .Select(g => g.Trim())
+                .ToList();
+
+            // If the patient already has an Active care plan, append goals +
+            // instructions to it instead of creating a duplicate. The merge
+            // only happens when the incoming plan is itself Active (Status =
+            // false); creating a Completed plan always inserts a fresh row.
+            var existingActive = await _carePlanRepository.GetActiveByPatientAsync(dto.PatientId);
+            if (existingActive != null && !dto.Status)
+            {
+                var existingGoals =
+                    JsonSerializer.Deserialize<List<string>>(existingActive.GoalsJSON) ?? new();
+
+                // Append only goals not already present (case-insensitive).
+                foreach (var goal in newGoals)
+                {
+                    if (!existingGoals.Any(g => string.Equals(g, goal, StringComparison.OrdinalIgnoreCase)))
+                        existingGoals.Add(goal);
+                }
+
+                existingActive.GoalsJSON = JsonSerializer.Serialize(existingGoals);
+
+                // Append the new instructions on a new line so the team can
+                // see incremental additions. Skip if identical text is
+                // already present.
+                var trimmedNew = dto.Instructions.Trim();
+                if (string.IsNullOrWhiteSpace(existingActive.Instructions))
+                {
+                    existingActive.Instructions = trimmedNew;
+                }
+                else if (!existingActive.Instructions.Contains(trimmedNew, StringComparison.OrdinalIgnoreCase))
+                {
+                    existingActive.Instructions =
+                        existingActive.Instructions.TrimEnd() + "\n" + trimmedNew;
+                }
+
+                var merged = await _carePlanRepository.UpdateAsync(existingActive);
+
+                var mergedResponse = new CarePlanResponseDto
+                {
+                    CarePlanId   = merged.CarePlanId,
+                    PatientId    = merged.PatientId,
+                    Goals        = JsonSerializer.Deserialize<List<string>>(merged.GoalsJSON) ?? new(),
+                    Instructions = merged.Instructions,
+                    Status       = merged.Status ? "Completed" : "Active"
+                };
+
+                return (true, Constant.CarePlanMessages.CarePlanCreated, mergedResponse);
+            }
+
+            var goalsJson = JsonSerializer.Serialize(newGoals);
 
             var carePlan = new CarePlan
             {

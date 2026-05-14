@@ -7,6 +7,7 @@ import { EncounterService } from '../../core/services/encounter.service';
 import { FollowUpService } from '../../core/services/follow-up.service';
 import { PatientService } from '../../core/services/patient.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import {
   FollowUpDetails,
   FollowUpFilter
@@ -17,7 +18,7 @@ import { PatientLookup } from '../../core/models/patient.models';
 @Component({
   selector: 'app-follow-ups',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './follow-ups.component.html',
   styleUrl: './follow-ups.component.scss'
 })
@@ -33,6 +34,13 @@ export class FollowUpsComponent implements OnInit {
   readonly patients = signal<PatientLookup[]>([]);
   readonly encounters = signal<EncounterLookup[]>([]);
   readonly lockedEncounter = signal<{ id: number; patientName: string } | null>(null);
+
+  readonly patientOptions = computed<SearchableOption[]>(() =>
+    this.patients().map((p) => ({ value: p.patientId, label: p.name }))
+  );
+  readonly encounterOptions = computed<SearchableOption[]>(() =>
+    this.encounters().map((e) => ({ value: e.encounterId, label: `#${e.encounterId}` }))
+  );
   readonly loading = signal(true);
   readonly searchTerm = signal('');
   readonly windowFilter = signal<'all' | 'upcoming' | 'past'>('all');

@@ -5,6 +5,7 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { BillingService } from '../../../core/services/billing.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { UserService } from '../../../core/services/user.service';
+import { SearchableSelectComponent, SearchableOption } from '../../../shared/components/searchable-select/searchable-select.component';
 import {
   ExportFormat,
   ExportStatus,
@@ -17,7 +18,7 @@ import { ProviderLookup } from '../../../core/models/user.models';
 @Component({
   selector: 'app-admin-billing',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './billing.component.html',
   styleUrl: './billing.component.scss'
 })
@@ -29,6 +30,9 @@ export class BillingComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly providers = signal<ProviderLookup[]>([]);
+  readonly providerOptions = computed<SearchableOption[]>(() =>
+    this.providers().map((pr) => ({ value: String(pr.providerId), label: pr.name }))
+  );
   readonly exporting = signal(false);
   readonly markingBilled = signal(false);
   readonly drawerLoading = signal(false);

@@ -116,9 +116,9 @@
           <div class="rx-body">
             <header class="rx-head">
               <div>
-                <span class="rx-encounter">Encounter #{{ p.encounterId }}</span>
+                <span class="rx-encounter">{{ patientNameFor(p.encounterId) }}</span>
                 <span class="rx-meta">
-                  Provider #{{ p.providerId }} · {{ p.createdDate | date:'mediumDate' }}
+                  Encounter #{{ p.encounterId }} · {{ p.createdDate | date:'mediumDate' }}
                 </span>
               </div>
               <span class="status-chip" [attr.data-tone]="toneFor(p.status)">
@@ -166,9 +166,9 @@
           </span>
           <div>
             <span class="eyebrow">Prescription #{{ p.prescriptionId }}</span>
-            <h2>Encounter #{{ p.encounterId }}</h2>
+            <h2>{{ patientNameFor(p.encounterId) }}</h2>
             <span class="muted">
-              Provider #{{ p.providerId }} ·
+              Encounter #{{ p.encounterId }} ·
               {{ p.createdDate | date:'medium' }}
             </span>
           </div>
@@ -269,12 +269,11 @@
                 </div>
               } @else {
                 <label>Encounter *</label>
-                <select class="text-input" formControlName="encounterId">
-                  <option [ngValue]="0">-- Select encounter --</option>
-                  @for (e of encounters(); track e.encounterId) {
-                    <option [ngValue]="e.encounterId">{{ e.encounterId }}</option>
-                  }
-                </select>
+                <app-searchable-select
+                  formControlName="encounterId"
+                  placeholder="-- Select encounter --"
+                  [options]="encounterOptions()">
+                </app-searchable-select>
                 @if (createForm.controls.encounterId.touched && createForm.controls.encounterId.errors) {
                   <small class="error">Encounter selection is required.</small>
                 }
@@ -289,12 +288,11 @@
                 </div>
               } @else {
                 <label>Provider *</label>
-                <select class="text-input" formControlName="providerId">
-                  <option [ngValue]="0">-- Select provider --</option>
-                  @for (pr of providers(); track pr.providerId) {
-                    <option [ngValue]="pr.providerId">{{ pr.name }}</option>
-                  }
-                </select>
+                <app-searchable-select
+                  formControlName="providerId"
+                  placeholder="-- Select provider --"
+                  [options]="providerOptions()">
+                </app-searchable-select>
                 @if (createForm.controls.providerId.touched && createForm.controls.providerId.errors) {
                   <small class="error">Provider selection is required.</small>
                 }
@@ -415,12 +413,11 @@
           <div class="grid-2">
             <div class="field">
               <label>Provider *</label>
-              <select class="text-input" formControlName="providerId">
-                <option [ngValue]="0">-- Select provider --</option>
-                @for (pr of providers(); track pr.providerId) {
-                  <option [ngValue]="pr.providerId">{{ pr.name }}</option>
-                }
-              </select>
+              <app-searchable-select
+                formControlName="providerId"
+                placeholder="-- Select provider --"
+                [options]="providerOptions()">
+              </app-searchable-select>
             </div>
             <div class="field">
               <label>Status *</label>

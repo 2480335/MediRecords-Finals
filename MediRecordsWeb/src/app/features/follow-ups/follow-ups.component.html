@@ -50,21 +50,23 @@
     <form class="filter-form" [formGroup]="filterForm" (ngSubmit)="applyFilters()">
       <div class="filter">
         <label>Patient</label>
-        <select class="text-input" formControlName="patientId">
-          <option value="">Any patient</option>
-          @for (p of patients(); track p.patientId) {
-            <option [value]="p.patientId">{{ p.name }}</option>
-          }
-        </select>
+        <app-searchable-select
+          formControlName="patientId"
+          placeholder="Any patient"
+          emptyLabel="Any patient"
+          [emptyValue]="''"
+          [options]="patientOptions()">
+        </app-searchable-select>
       </div>
       <div class="filter">
         <label>Encounter</label>
-        <select class="text-input" formControlName="encounterId">
-          <option value="">Any encounter</option>
-          @for (e of encounters(); track e.encounterId) {
-            <option [value]="e.encounterId">{{ e.encounterId }}</option>
-          }
-        </select>
+        <app-searchable-select
+          formControlName="encounterId"
+          placeholder="Any encounter"
+          emptyLabel="Any encounter"
+          [emptyValue]="''"
+          [options]="encounterOptions()">
+        </app-searchable-select>
       </div>
       <div class="filter-buttons">
         <button type="submit" class="btn-primary">
@@ -239,12 +241,11 @@
                 </div>
               } @else {
                 <label>Encounter *</label>
-                <select class="text-input" formControlName="encounterId">
-                  <option [ngValue]="0">-- Select encounter --</option>
-                  @for (e of encounters(); track e.encounterId) {
-                    <option [ngValue]="e.encounterId">{{ e.encounterId }}</option>
-                  }
-                </select>
+                <app-searchable-select
+                  formControlName="encounterId"
+                  placeholder="-- Select encounter --"
+                  [options]="encounterOptions()">
+                </app-searchable-select>
                 @if (createForm.controls.encounterId.touched && createForm.controls.encounterId.errors) {
                   <small class="error">Encounter selection is required.</small>
                 }

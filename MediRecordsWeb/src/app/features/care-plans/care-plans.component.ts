@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { CarePlanService } from '../../core/services/care-plan.service';
 import { PatientService } from '../../core/services/patient.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import {
   CarePlanCreateRequest,
   CarePlanDetails
@@ -17,7 +18,7 @@ type StatusFilter = 'all' | 'active' | 'completed';
 @Component({
   selector: 'app-care-plans',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './care-plans.component.html',
   styleUrl: './care-plans.component.scss'
 })
@@ -30,6 +31,9 @@ export class CarePlansComponent implements OnInit {
 
   readonly canCreate = computed(() => this.auth.role() === 'Physician');
   readonly patients = signal<PatientLookup[]>([]);
+  readonly patientOptions = computed<SearchableOption[]>(() =>
+    this.patients().map((p) => ({ value: p.patientId, label: p.name }))
+  );
 
   readonly plans = signal<CarePlanDetails[]>([]);
   readonly loading = signal(true);

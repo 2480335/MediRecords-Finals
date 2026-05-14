@@ -132,7 +132,7 @@ public class PrescriptionWithItemsController : ControllerBase
     }
 
     [HttpDelete("{prescriptionId}")]
-    [Authorize(Roles = nameof(UserRoleEnums.Admin))]
+    [Authorize(Roles = nameof(UserRoleEnums.Admin) + "," + nameof(UserRoleEnums.Physician))]
     [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(string), StatusCodes.Status500InternalServerError)]

@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { EncounterService } from '../../core/services/encounter.service';
 import { LabOrderService } from '../../core/services/lab-order.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import {
   COMMON_LAB_TESTS,
   LabOrderResponse,
@@ -20,7 +21,7 @@ type ScopeFilter = 'all' | 'open' | 'completed';
 @Component({
   selector: 'app-lab-orders',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './lab-orders.component.html',
   styleUrl: './lab-orders.component.scss'
 })
@@ -38,6 +39,9 @@ export class LabOrdersComponent implements OnInit {
   readonly commonTests = COMMON_LAB_TESTS;
   readonly encounters = signal<EncounterLookup[]>([]);
   readonly lockedEncounter = signal<{ id: number; patientName: string } | null>(null);
+  readonly encounterOptions = computed<SearchableOption[]>(() =>
+    this.encounters().map((e) => ({ value: e.encounterId, label: `#${e.encounterId}` }))
+  );
 
   readonly orders = signal<LabOrderResponse[]>([]);
   readonly loading = signal(true);

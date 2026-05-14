@@ -8,6 +8,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { PatientService } from '../../core/services/patient.service';
 import { ToastService } from '../../core/services/toast.service';
 import { UserService } from '../../core/services/user.service';
+import { SearchableSelectComponent, SearchableOption } from '../../shared/components/searchable-select/searchable-select.component';
 import {
   APPOINTMENT_STATUSES,
   AppointmentRequest,
@@ -28,7 +29,7 @@ const STATUS_BY_VALUE: Record<number, AppointmentStatusName> = {
 @Component({
   selector: 'app-appointments',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SearchableSelectComponent],
   templateUrl: './appointments.component.html',
   styleUrl: './appointments.component.scss'
 })
@@ -44,6 +45,13 @@ export class AppointmentsComponent implements OnInit {
   readonly statuses = APPOINTMENT_STATUSES;
   readonly patients = signal<PatientLookup[]>([]);
   readonly providers = signal<ProviderLookup[]>([]);
+
+  readonly patientOptions = computed<SearchableOption[]>(() =>
+    this.patients().map((p) => ({ value: p.patientId, label: p.name }))
+  );
+  readonly providerOptions = computed<SearchableOption[]>(() =>
+    this.providers().map((pr) => ({ value: pr.providerId, label: pr.name }))
+  );
 
   // Booking appointments is FrontDesk-only on the backend. Mirror that
   // in the UI so other roles don't see a button that would 403.

@@ -41,15 +41,11 @@
             </div>
           } @else {
             <label>Encounter *</label>
-            <div class="prefix-input">
-              <span class="prefix">#</span>
-              <select class="text-input" formControlName="encounterId">
-                <option [ngValue]="0">-- Select encounter --</option>
-                @for (e of encounters(); track e.encounterId) {
-                  <option [ngValue]="e.encounterId">{{ e.encounterId }}</option>
-                }
-              </select>
-            </div>
+            <app-searchable-select
+              formControlName="encounterId"
+              placeholder="-- Select encounter --"
+              [options]="encounterOptions()">
+            </app-searchable-select>
             @if (form.controls.encounterId.touched && form.controls.encounterId.errors) {
               <small class="error">Encounter selection is required.</small>
             }

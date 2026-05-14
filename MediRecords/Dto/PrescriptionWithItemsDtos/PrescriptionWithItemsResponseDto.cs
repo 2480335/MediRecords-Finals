@@ -20,7 +20,7 @@ public class PrescriptionWithItemsResponseDto
     public int PrescriptionId { get; set; }
     public int EncounterId { get; set; }
     public int ProviderId { get; set; }
-    public DateOnly CreatedDate { get; set; }
+    public DateTime CreatedDate { get; set; }
     public string Status { get; set; } = null!; // "Draft" or "Issued"
     public List<PrescriptionItemWithPrescriptionResponseDto> PrescriptionItems { get; set; } = new();
 }

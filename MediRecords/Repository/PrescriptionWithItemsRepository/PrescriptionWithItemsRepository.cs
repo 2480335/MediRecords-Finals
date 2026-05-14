@@ -89,7 +89,7 @@ public class PrescriptionWithItemsRepository : IPrescriptionWithItemsRepository
             PrescriptionId = prescription.PrescriptionId,
             EncounterId = prescription.EncounterId,
             ProviderId = prescription.ProviderId,
-            CreatedDate = DateOnly.FromDateTime(prescription.CreatedDate),
+            CreatedDate = prescription.CreatedDate,
             Status = prescription.Status.ToString(),
             PrescriptionItems = prescription.PrescriptionItems.Select(pi => new PrescriptionItemWithPrescriptionResponseDto
             {
@@ -128,7 +128,7 @@ public class PrescriptionWithItemsRepository : IPrescriptionWithItemsRepository
             PrescriptionId = prescription.PrescriptionId,
             EncounterId = prescription.EncounterId,
             ProviderId = prescription.ProviderId,
-            CreatedDate = DateOnly.FromDateTime(prescription.CreatedDate),
+            CreatedDate = prescription.CreatedDate,
             Status = prescription.Status.ToString(),
             PrescriptionItems = prescription.PrescriptionItems.Select(pi => new PrescriptionItemWithPrescriptionResponseDto
             {
@@ -160,7 +160,7 @@ public class PrescriptionWithItemsRepository : IPrescriptionWithItemsRepository
             PrescriptionId = p.PrescriptionId,
             EncounterId = p.EncounterId,
             ProviderId = p.ProviderId,
-            CreatedDate = DateOnly.FromDateTime(p.CreatedDate),
+            CreatedDate = p.CreatedDate,
             Status = p.Status.ToString(),
             PrescriptionItems = p.PrescriptionItems.Select(pi => new PrescriptionItemWithPrescriptionResponseDto
             {
@@ -260,7 +260,7 @@ public class PrescriptionWithItemsRepository : IPrescriptionWithItemsRepository
                 PrescriptionId = prescription.PrescriptionId,
                 EncounterId = prescription.EncounterId,
                 ProviderId = prescription.ProviderId,
-                CreatedDate = DateOnly.FromDateTime(prescription.CreatedDate),
+                CreatedDate = prescription.CreatedDate,
                 Status = prescription.Status.ToString(),
                 PrescriptionItems = prescription.PrescriptionItems.Select(pi => new PrescriptionItemWithPrescriptionResponseDto
                 {
